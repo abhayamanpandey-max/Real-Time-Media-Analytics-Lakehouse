@@ -1,0 +1,41 @@
+# Development environment config.
+# All values point to local infrastructure (Docker Kafka, local Mock API).
+# To use a real data source, update config/prod.yml - do not change this file.
+
+env: dev
+
+api:
+  base_url: "http://localhost:8000"
+  token: "dev-bearer-token-local"
+  page_size: 100
+  max_pages: 50
+
+kafka:
+  bootstrap_servers: "localhost:9092"
+  topic: "audience-events-dev"
+  group_id: "lakehouse-consumer-dev"
+
+databricks:
+  catalog: "analytics_dev"
+  schemas:
+    bronze: "bronze"
+    silver: "silver"
+    gold: "gold"
+    platinum: "platinum"
+    semantic: "semantic"
+  tables:
+    bronze_events: "audience_events"
+    silver_events: "audience_events"
+    silver_quarantine: "audience_quarantine"
+    dim_property: "dim_property"
+    dim_geography: "dim_geography"
+    dim_platform: "dim_platform"
+    dim_category: "dim_category"
+    dim_date: "dim_date"
+    fact_audience: "fact_audience"
+    mart_rankings: "mart_audience_rankings"
+    mart_profile: "mart_audience_profile"
+
+spike_detection:
+  window_days: 7
+  multiplier: 5

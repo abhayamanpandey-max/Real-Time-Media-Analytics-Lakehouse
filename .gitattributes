@@ -1,0 +1,22 @@
+# .gitattributes
+# Normalize line endings to LF in the repository, CRLF on Windows checkout.
+# This prevents the LF→CRLF warnings and ensures consistent files on Databricks (Linux).
+
+* text=auto eol=lf
+
+# Force these file types to always be LF
+*.py    text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.sql   text eol=lf
+*.toml  text eol=lf
+*.md    text eol=lf
+*.json  text eol=lf
+*.csv   text eol=lf
+*.txt   text eol=lf
+
+# Binary files — no line ending conversion
+*.png   binary
+*.jpg   binary
+*.gif   binary
+*.ico   binary

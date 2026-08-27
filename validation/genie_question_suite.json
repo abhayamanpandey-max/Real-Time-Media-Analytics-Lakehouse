@@ -1,0 +1,308 @@
+{
+  "version": "1.0",
+  "description": "Genie validation question suite. Each question has a canonical phrasing, alternate phrasings to test consistency, expected SQL pattern, expected answer type, and the semantic asset it should query.",
+  "questions": [
+    {
+      "id": "Q001",
+      "canonical": "Which property had the highest total audience in the most recent monthly period?",
+      "alternate_phrasings": [
+        "What property ranked #1 last month?",
+        "Show me the top property by audience for the latest month",
+        "Which media property had the most viewers last month?"
+      ],
+      "expected_asset": "sem_audience_rankings",
+      "expected_sql_contains": ["sem_audience_rankings", "rank", "MONTHLY"],
+      "expected_answer_type": "single_property_name",
+      "notes": "Should return rank=1 for the most recent MONTHLY period, SUMming across all platforms and regions"
+    },
+    {
+      "id": "Q002",
+      "canonical": "What are the top 5 properties by audience share in the US for Q3?",
+      "alternate_phrasings": [
+        "List the top 5 media properties by share in US for Q3",
+        "Give me the US top 5 properties by audience share Q3"
+      ],
+      "expected_asset": "sem_audience_rankings",
+      "expected_sql_contains": ["sem_audience_rankings", "audience_share_pct", "US", "Q3"],
+      "expected_answer_type": "ranked_list",
+      "notes": "Returns top 5 for a specific region and period type"
+    },
+    {
+      "id": "Q003",
+      "canonical": "How did property XYZ rank globally in the most recent weekly period?",
+      "alternate_phrasings": [
+        "What was the rank of XYZ property last week globally?",
+        "XYZ global ranking last week"
+      ],
+      "expected_asset": "sem_audience_rankings",
+      "expected_sql_contains": ["sem_audience_rankings", "XYZ", "WEEKLY"],
+      "expected_answer_type": "count",
+      "notes": "Looking up a specific property's rank"
+    },
+    {
+      "id": "Q004",
+      "canonical": "Which properties had an audience share greater than 5% in the last monthly period?",
+      "alternate_phrasings": [
+        "Show properties with >5% share last month",
+        "What properties crossed 5 percent audience share recently?"
+      ],
+      "expected_asset": "sem_audience_rankings",
+      "expected_sql_contains": ["sem_audience_rankings", "audience_share_pct", "5", "MONTHLY"],
+      "expected_answer_type": "ranked_list",
+      "notes": "Filter by threshold"
+    },
+    {
+      "id": "Q005",
+      "canonical": "Who were the bottom 10 properties in total audience for the yearly period?",
+      "alternate_phrasings": [
+        "List the 10 lowest ranked properties by audience this year",
+        "Bottom 10 properties by viewers yearly"
+      ],
+      "expected_asset": "sem_audience_rankings",
+      "expected_sql_contains": ["sem_audience_rankings", "total_audience", "DESC", "YEARLY"],
+      "expected_answer_type": "ranked_list",
+      "notes": "Reverse sort by rank or total_audience"
+    },
+    {
+      "id": "Q006",
+      "canonical": "What is the average total audience for the top 3 properties monthly?",
+      "alternate_phrasings": [
+        "Average audience of top 3 properties last month",
+        "Monthly average for top 3 ranked properties"
+      ],
+      "expected_asset": "sem_audience_rankings",
+      "expected_sql_contains": ["sem_audience_rankings", "AVG", "MONTHLY", "3"],
+      "expected_answer_type": "count",
+      "notes": "Requires aggregation over a ranked subset"
+    },
+    {
+      "id": "Q007",
+      "canonical": "Did property ABC move up or down in rank this month compared to last month?",
+      "alternate_phrasings": [
+        "Show rank change for ABC property month over month",
+        "ABC property ranking trend this month"
+      ],
+      "expected_asset": "sem_audience_rankings",
+      "expected_sql_contains": ["sem_audience_rankings", "ABC", "rank"],
+      "expected_answer_type": "single_property_name",
+      "notes": "Requires self-join or window function for previous period"
+    },
+    {
+      "id": "Q008",
+      "canonical": "Which property had the largest jump in audience share this week?",
+      "alternate_phrasings": [
+        "Top share gainer this week",
+        "Property with highest audience share increase weekly"
+      ],
+      "expected_asset": "sem_audience_rankings",
+      "expected_sql_contains": ["sem_audience_rankings", "audience_share_pct", "WEEKLY"],
+      "expected_answer_type": "single_property_name",
+      "notes": "Complex trend calculation across weeks"
+    },
+    {
+      "id": "Q009",
+      "canonical": "What is the audience profile breakdown by platform for property XYZ?",
+      "alternate_phrasings": [
+        "Show me platform breakdown for XYZ audience",
+        "XYZ audience by platform"
+      ],
+      "expected_asset": "sem_audience_profile",
+      "expected_sql_contains": ["sem_audience_profile", "platform", "XYZ"],
+      "expected_answer_type": "ranked_list",
+      "notes": "Aggregating profiles by platform"
+    },
+    {
+      "id": "Q010",
+      "canonical": "Which region has the highest concentration of mobile users for property ABC?",
+      "alternate_phrasings": [
+        "Top region for ABC mobile users",
+        "Where are most ABC mobile viewers located?"
+      ],
+      "expected_asset": "sem_audience_profile",
+      "expected_sql_contains": ["sem_audience_profile", "region", "mobile", "ABC"],
+      "expected_answer_type": "single_property_name",
+      "notes": "Filter by platform and sort by region"
+    },
+    {
+      "id": "Q011",
+      "canonical": "Compare the desktop vs mobile audience for property LMN in Europe.",
+      "alternate_phrasings": [
+        "LMN desktop and mobile audience in Europe",
+        "Europe audience split by device for LMN"
+      ],
+      "expected_asset": "sem_audience_profile",
+      "expected_sql_contains": ["sem_audience_profile", "LMN", "Europe", "platform"],
+      "expected_answer_type": "ranked_list",
+      "notes": "Filtering on multiple dimensions"
+    },
+    {
+      "id": "Q012",
+      "canonical": "What percentage of property PQR's audience is in Asia?",
+      "alternate_phrasings": [
+        "PQR audience share in Asia",
+        "How much of PQR is from Asia?"
+      ],
+      "expected_asset": "sem_audience_profile",
+      "expected_sql_contains": ["sem_audience_profile", "PQR", "Asia"],
+      "expected_answer_type": "percentage",
+      "notes": "Calculating percentage of total for a property"
+    },
+    {
+      "id": "Q013",
+      "canonical": "Which platform drives the most audience for property DEF globally?",
+      "alternate_phrasings": [
+        "Top platform for DEF",
+        "DEF main audience platform"
+      ],
+      "expected_asset": "sem_audience_profile",
+      "expected_sql_contains": ["sem_audience_profile", "DEF", "platform"],
+      "expected_answer_type": "single_property_name",
+      "notes": "Group by platform and rank"
+    },
+    {
+      "id": "Q014",
+      "canonical": "List all properties where Smart TV audience exceeds Mobile audience in the US.",
+      "alternate_phrasings": [
+        "US properties with more Smart TV than Mobile viewers",
+        "Properties dominant on Smart TV in America"
+      ],
+      "expected_asset": "sem_audience_profile",
+      "expected_sql_contains": ["sem_audience_profile", "Smart TV", "Mobile", "US"],
+      "expected_answer_type": "ranked_list",
+      "notes": "Complex condition comparing platforms within a region"
+    },
+    {
+      "id": "Q015",
+      "canonical": "What is the total audience size for property GHI across all platforms in LATAM?",
+      "alternate_phrasings": [
+        "GHI total viewers in LATAM",
+        "LATAM audience for GHI"
+      ],
+      "expected_asset": "sem_audience_profile",
+      "expected_sql_contains": ["sem_audience_profile", "GHI", "LATAM"],
+      "expected_answer_type": "count",
+      "notes": "Sum of audience for property in a region"
+    },
+    {
+      "id": "Q016",
+      "canonical": "Show the regional distribution of Connected TV audience for property JKL.",
+      "alternate_phrasings": [
+        "JKL Connected TV audience by region",
+        "Where are JKL's Connected TV viewers?"
+      ],
+      "expected_asset": "sem_audience_profile",
+      "expected_sql_contains": ["sem_audience_profile", "JKL", "Connected TV", "region"],
+      "expected_answer_type": "ranked_list",
+      "notes": "Group by region with platform filter"
+    },
+    {
+      "id": "Q017",
+      "canonical": "What is the audience overlap index between property ABC and XYZ?",
+      "alternate_phrasings": [
+        "Compare ABC and XYZ audience",
+        "Audience index of ABC vs XYZ"
+      ],
+      "expected_asset": "sem_cross_property_comparison",
+      "expected_sql_contains": ["sem_cross_property_comparison", "ABC", "XYZ", "audience_index"],
+      "expected_answer_type": "comparison_index",
+      "notes": "Direct pairwise lookup"
+    },
+    {
+      "id": "Q018",
+      "canonical": "Which property has the highest audience index correlation with property LMN?",
+      "alternate_phrasings": [
+        "Properties most similar to LMN by audience",
+        "Top audience overlap with LMN"
+      ],
+      "expected_asset": "sem_cross_property_comparison",
+      "expected_sql_contains": ["sem_cross_property_comparison", "LMN", "audience_index"],
+      "expected_answer_type": "single_property_name",
+      "notes": "Lookup by property and sort by index"
+    },
+    {
+      "id": "Q019",
+      "canonical": "Are audiences for property DEF and GHI highly correlated (index > 120)?",
+      "alternate_phrasings": [
+        "Is DEF and GHI overlap above 120?",
+        "Do DEF and GHI have a high audience index?"
+      ],
+      "expected_asset": "sem_cross_property_comparison",
+      "expected_sql_contains": ["sem_cross_property_comparison", "DEF", "GHI"],
+      "expected_answer_type": "comparison_index",
+      "notes": "Threshold check on pairwise index"
+    },
+    {
+      "id": "Q020",
+      "canonical": "List the top 5 properties with the lowest audience index compared to property PQR.",
+      "alternate_phrasings": [
+        "Properties with least overlap with PQR",
+        "Bottom 5 audience index for PQR"
+      ],
+      "expected_asset": "sem_cross_property_comparison",
+      "expected_sql_contains": ["sem_cross_property_comparison", "PQR", "ASC", "5"],
+      "expected_answer_type": "ranked_list",
+      "notes": "Bottom N query for specific property pair"
+    },
+    {
+      "id": "Q021",
+      "canonical": "What is the average audience index between the top 3 network properties?",
+      "alternate_phrasings": [
+        "Average overlap of top 3 networks",
+        "Mean audience index among top 3 properties"
+      ],
+      "expected_asset": "sem_cross_property_comparison",
+      "expected_sql_contains": ["sem_cross_property_comparison", "AVG", "audience_index"],
+      "expected_answer_type": "count",
+      "notes": "Average index of a subset"
+    },
+    {
+      "id": "Q022",
+      "canonical": "Which media property had the most viewers last month?",
+      "alternate_phrasings": [
+        "What property ranked #1 last month?",
+        "Show me the top property by audience for the latest month",
+        "Which property had the highest total audience in the most recent monthly period?"
+      ],
+      "expected_asset": "sem_audience_rankings",
+      "expected_sql_contains": ["sem_audience_rankings", "rank", "MONTHLY"],
+      "expected_answer_type": "single_property_name",
+      "notes": "Consistency test of Q001 phrasing"
+    },
+    {
+      "id": "Q023",
+      "canonical": "Give me the US top 5 properties by audience share Q3",
+      "alternate_phrasings": [
+        "What are the top 5 properties by audience share in the US for Q3?",
+        "List the top 5 media properties by share in US for Q3"
+      ],
+      "expected_asset": "sem_audience_rankings",
+      "expected_sql_contains": ["sem_audience_rankings", "audience_share_pct", "US", "Q3"],
+      "expected_answer_type": "ranked_list",
+      "notes": "Consistency test of Q002 phrasing"
+    },
+    {
+      "id": "Q024",
+      "canonical": "XYZ audience by platform",
+      "alternate_phrasings": [
+        "What is the audience profile breakdown by platform for property XYZ?",
+        "Show me platform breakdown for XYZ audience"
+      ],
+      "expected_asset": "sem_audience_profile",
+      "expected_sql_contains": ["sem_audience_profile", "platform", "XYZ"],
+      "expected_answer_type": "ranked_list",
+      "notes": "Consistency test of Q009 phrasing"
+    },
+    {
+      "id": "Q025",
+      "canonical": "Audience index of ABC vs XYZ",
+      "alternate_phrasings": [
+        "What is the audience overlap index between property ABC and XYZ?",
+        "Compare ABC and XYZ audience"
+      ],
+      "expected_asset": "sem_cross_property_comparison",
+      "expected_sql_contains": ["sem_cross_property_comparison", "ABC", "XYZ"],
+      "expected_answer_type": "comparison_index",
+      "notes": "Consistency test of Q017 phrasing"
+    }
+  ]
+}

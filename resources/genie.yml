@@ -1,0 +1,98 @@
+# resources/genie.yml
+# Defines the Genie Space as code via Databricks Asset Bundles.
+# This Genie space is the natural language interface for the analytics lakehouse.
+#
+# KEY DESIGN PRINCIPLE: Genie is only permitted to query the 3 semantic views.
+# The small, curated surface area is the primary lever for answer accuracy.
+# Do not expose Gold, Silver, or Platinum tables to Genie directly.
+#
+# After deploying: databricks bundle deploy --target dev
+# Then visit Databricks > Genie to find the space.
+
+resources:
+  dashboards: {}
+  genie_spaces:
+    media_analytics_assistant:
+      display_name: "Media Analytics Assistant [${bundle.target}]"
+      description: |
+        Ask questions about audience performance, property rankings, and platform analytics.
+        This assistant has access to pre-computed audience data covering all properties,
+        platforms, geographies, and time periods in the analytics lakehouse.
+      warehouse_id: ${var.warehouse_id}
+
+      table_references:
+        - catalog: ${var.catalog}
+          schema: semantic
+          table: sem_audience_rankings
+          description: "Property audience rankings by period, platform, and region. Use for ranking and comparison questions."
+        - catalog: ${var.catalog}
+          schema: semantic
+          table: sem_audience_profile
+          description: "Property-level audience composition by platform and region. Use for profile and breakdown questions."
+        - catalog: ${var.catalog}
+          schema: semantic
+          table: sem_cross_property_comparison
+          description: "Pairwise audience comparison between properties. Use for direct head-to-head comparison questions."
+
+      instructions: |
+        You are an analytics assistant for a media audience analytics platform.
+        
+        DATA COVERAGE:
+        - Properties: 20 media properties (e.g. Channel Alpha, Stream Beta, Media Gamma)
+        - Platforms: Web Browser, Mobile App, Connected TV, Smart TV, Streaming Device, Desktop App
+        - Regions: North Region, South Region, East Region, West Region, Central Region,
+          Coastal East, Coastal West, Mountain Zone, Metro Core, Rural Belt
+        - Time periods: available as MONTHLY (YYYY-MM format) and WEEKLY (YYYY-WNN format)
+        
+        WHICH TABLE TO USE:
+        - For ranking questions ('which property ranked highest', 'top 5 properties', 'who had the most audience'):
+          Use sem_audience_rankings. Filter by period_type='MONTHLY' or 'WEEKLY'. rank=1 is the top property.
+        - For property profile questions ('what is Channel Alpha's breakdown', 'how does Stream Beta's audience split across platforms'):
+          Use sem_audience_profile. Filter by property='Channel Alpha'.
+        - For head-to-head comparison ('how does Channel Alpha compare to Stream Beta', 'which is bigger'):
+          Use sem_cross_property_comparison. Filter by property_a and property_b.
+          audience_index > 100 means property_a is larger than property_b.
+        
+        IMPORTANT RULES:
+        - Always clarify the time period if not specified. Ask: 'Do you mean the most recent month or a specific period?'
+        - When asked for 'total audience', SUM total_audience across all platforms and regions unless the user specifies a platform or region.
+        - 'rank' in sem_audience_rankings is per platform+region segment. Clarify if the user wants platform-agnostic ranking.
+        - Period format: monthly periods look like '2024-01', weekly periods look like '2024-W01'.
+        - audience_share_pct is the property's % share within its platform+region segment, not across all segments.
+        
+        HONEST LIMITATIONS:
+        - Data is refreshed daily. Answers reflect yesterday's completed data, not real-time.
+        - Spike-flagged rows (_is_spike_flagged=True in underlying data) are included in audience totals but may represent anomalous days.
+
+      sample_questions:
+        - question: "Which property had the highest total audience last month?"
+          table: sem_audience_rankings
+          note: "Expects: filter period_type=MONTHLY, most recent period, rank=1, SUM across all platforms and regions"
+
+        - question: "What are the top 3 properties on Connected TV in the North Region for the most recent weekly period?"
+          table: sem_audience_rankings
+          note: "Expects: filter platform_code=connected_tv, region='North Region', period_type=WEEKLY, rank <= 3"
+
+        - question: "What was Channel Alpha's audience breakdown by platform in January 2024?"
+          table: sem_audience_profile
+          note: "Expects: filter property='Channel Alpha', period='2024-01', period_type=MONTHLY, group by platform"
+
+        - question: "Which platform drives the most audience for Stream Beta?"
+          table: sem_audience_profile
+          note: "Expects: filter property='Stream Beta', SUM total_audience by platform, ORDER BY total_audience DESC"
+
+        - question: "How does Channel Alpha compare to Stream Beta on web in January 2024?"
+          table: sem_cross_property_comparison
+          note: "Expects: filter (property_a='Channel Alpha' AND property_b='Stream Beta') OR vice versa, platform_code='web', period='2024-01'"
+
+        - question: "What percentage of Metro Core's total audience does Channel Alpha hold on mobile this month?"
+          table: sem_audience_rankings
+          note: "Expects: filter region='Metro Core', platform_code='mobile_app', most recent monthly period, return audience_share_pct for Channel Alpha"
+
+        - question: "Which property showed the most growth on Connected TV from last month to this month?"
+          table: sem_audience_rankings
+          note: "Expects: self-join on sem_audience_rankings for two consecutive monthly periods, compute difference in total_audience"
+
+        - question: "What is the audience index of Network Delta vs Media Gamma on Smart TV for the latest month?"
+          table: sem_cross_property_comparison
+          note: "Expects: sem_cross_property_comparison filter platform_code=smart_tv, most recent period, filter property pair"

@@ -1,0 +1,50 @@
+# databricks.yml
+# Databricks Asset Bundle (DAB) root configuration.
+# Deployment: databricks bundle deploy --target dev
+# Validation: databricks bundle validate
+#
+# Setup required:
+#   1. Install Databricks CLI: pip install databricks-cli
+#   2. Configure workspace: databricks configure --token
+#   3. Set DATABRICKS_HOST and DATABRICKS_TOKEN environment variables
+#   4. Fill in warehouse_id variable (SQL warehouse for Genie)
+#   5. Fill in cluster_id or configure job clusters below
+
+bundle:
+  name: real-time-media-analytics-lakehouse
+
+variables:
+  catalog:
+    description: "Unity Catalog catalog name. Dev uses analytics_dev, prod uses analytics_prod."
+    default: analytics_dev
+  warehouse_id:
+    description: "SQL Warehouse ID for Genie and ad-hoc queries. Find in Databricks SQL > Warehouses."
+    default: ""
+  cluster_id:
+    description: "Existing all-purpose cluster ID for job runs. Leave empty to use job clusters."
+    default: ""
+  lakehouse_env:
+    description: "Environment name passed to Python jobs as LAKEHOUSE_ENV."
+    default: dev
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://YOUR_WORKSPACE_HOST.azuredatabricks.net  # Replace with your workspace URL
+    variables:
+      catalog: analytics_dev
+      lakehouse_env: dev
+
+  prod:
+    mode: production
+    workspace:
+      host: https://YOUR_WORKSPACE_HOST.azuredatabricks.net  # Replace with your workspace URL
+    variables:
+      catalog: analytics_prod
+      lakehouse_env: prod
+
+include:
+  - resources/workflows.yml
+  - resources/genie.yml

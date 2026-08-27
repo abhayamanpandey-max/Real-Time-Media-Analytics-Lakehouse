@@ -1,0 +1,76 @@
+# resources/workflows.yml
+# Defines the Media Analytics Lakehouse pipeline as a Databricks Workflow.
+# Schedule: Daily at 06:00 UTC.
+# Tasks run in dependency order: ingest -> silver -> gold -> platinum.
+# Each task sets LAKEHOUSE_ENV from the bundle variable.
+
+resources:
+  jobs:
+    media_analytics_lakehouse_pipeline:
+      name: "[${bundle.target}] Media Analytics Lakehouse Pipeline"
+      description: "End-to-end pipeline: API ingestion -> Bronze -> Silver -> Gold -> Platinum"
+      
+      schedule:
+        quartz_cron_expression: "0 0 6 * * ?"
+        timezone_id: "UTC"
+        pause_status: UNPAUSED
+
+      # Email notifications on failure
+      email_notifications:
+        on_failure:
+          - REPLACE_WITH_YOUR_EMAIL@example.com
+
+      tasks:
+        - task_key: ingest_bronze
+          description: "Fetch all events from the analytics API and write to Bronze Delta table"
+          spark_python_task:
+            python_file: ingestion/ingest_run.py
+          environment_key: primary
+          
+        - task_key: transform_silver
+          description: "Apply all 7 DQ rules, write clean data to Silver, rejections to Quarantine"
+          depends_on:
+            - task_key: ingest_bronze
+          spark_python_task:
+            python_file: jobs/silver/silver_transform.py
+          environment_key: primary
+
+        - task_key: build_gold
+          description: "Build star schema: 5 dimension tables + fact_audience"
+          depends_on:
+            - task_key: transform_silver
+          spark_python_task:
+            python_file: jobs/gold/gold_run.py
+          environment_key: primary
+
+        - task_key: build_platinum
+          description: "Build analytical marts: audience_rankings + audience_profile (monthly + weekly)"
+          depends_on:
+            - task_key: build_gold
+          spark_python_task:
+            python_file: jobs/platinum/platinum_run.py
+          environment_key: primary
+
+      environments:
+        - environment_key: primary
+          spec:
+            client: "1"
+            dependencies:
+              - kafka-python>=2.0.0
+              - pydantic>=2.7.0
+              - fastapi>=0.115.0
+              - requests>=2.32.0
+              - pyyaml>=6.0.1
+              - numpy>=1.26.0
+              - databricks-sdk>=0.30.0
+              - python-dotenv>=1.0.0
+
+      # Job-level parameters passed to all tasks
+      parameters:
+        - name: LAKEHOUSE_ENV
+          default: "${var.lakehouse_env}"
+
+      tags:
+        project: real-time-media-analytics-lakehouse
+        layer: orchestration
+        managed_by: databricks_asset_bundles

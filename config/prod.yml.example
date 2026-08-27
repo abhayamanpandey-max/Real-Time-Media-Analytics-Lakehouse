@@ -1,0 +1,40 @@
+# Copy this to config/prod.yml and fill in real values.
+# config/prod.yml is gitignored - never commit secrets.
+
+env: prod
+
+api:
+  base_url: "https://your-real-analytics-api.example.com"
+  token: "${REAL_API_TOKEN}"
+  page_size: 500
+  max_pages: 1000
+
+kafka:
+  bootstrap_servers: "${KAFKA_BOOTSTRAP_SERVERS}"
+  topic: "audience-events-prod"
+  group_id: "lakehouse-consumer-prod"
+
+databricks:
+  catalog: "analytics_prod"
+  schemas:
+    bronze: "bronze"
+    silver: "silver"
+    gold: "gold"
+    platinum: "platinum"
+    semantic: "semantic"
+  tables:
+    bronze_events: "audience_events"
+    silver_events: "audience_events"
+    silver_quarantine: "audience_quarantine"
+    dim_property: "dim_property"
+    dim_geography: "dim_geography"
+    dim_platform: "dim_platform"
+    dim_category: "dim_category"
+    dim_date: "dim_date"
+    fact_audience: "fact_audience"
+    mart_rankings: "mart_audience_rankings"
+    mart_profile: "mart_audience_profile"
+
+spike_detection:
+  window_days: 7
+  multiplier: 5

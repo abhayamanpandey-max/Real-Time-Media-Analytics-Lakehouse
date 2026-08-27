@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+dist/
+build/
+*.egg
+
+# uv
+uv.lock
+
+# Environment
+.env
+.env.*
+*.env
+
+# Databricks
+.databricks/
+databricks.yml.local
+
+# Secrets - prod config is never committed
+config/prod.yml
+
+# Logs
+*.log
+logs/
+
+# Kafka / Docker volumes
+docker/data/
+
+# Test artifacts
+.pytest_cache/
+htmlcov/
+.coverage
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# macOS
+.DS_Store
