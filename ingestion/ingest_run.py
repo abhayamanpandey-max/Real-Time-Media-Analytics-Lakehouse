@@ -20,14 +20,13 @@ import sys
 import time
 import uuid
 
-from databricks.connect import DatabricksSession
-
-from config.loader import load_config
-from ingestion.api_client import fetch_all_events
-from ingestion.bronze_writer import write_bronze
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+def get_spark():
+    try:
+        from pyspark.sql import SparkSession
+        return SparkSession.builder.appName("Bronze Ingestion").getOrCreate()
+    except Exception:
+        from databricks.connect import DatabricksSession
+        return DatabricksSession.builder.getOrCreate()
 
 
 def main():
@@ -36,7 +35,7 @@ def main():
         env = os.environ.get("LAKEHOUSE_ENV", "dev")
         config = load_config(env)
 
-        spark = DatabricksSession.builder.getOrCreate()
+        spark = get_spark()
         run_id = str(uuid.uuid4())
 
         logger.info(f"Starting ingestion run_id={run_id} env={env}")
