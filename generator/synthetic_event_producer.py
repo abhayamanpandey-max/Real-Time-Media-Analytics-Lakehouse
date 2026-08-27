@@ -96,14 +96,15 @@ def main():
     produced_count = 0
     
     if args.continuous or (not args.once and args.duration_minutes == 0):
-        logger.info(f"Starting 24/7 CONTINUOUS streaming mode on topic '{topic}' (fresh daily records)...")
+        logger.info(f"Starting 24/7 CONTINUOUS streaming mode on topic '{topic}' (batch size target: {args.batch_size}, fresh daily records)...")
         try:
             while keep_running:
-                # In continuous mode, produce live fresh records (0-1 days back)
                 produce_event(producer, topic, config, max_days_back=1)
                 produced_count += 1
-                if produced_count % 100 == 0:
-                    logger.info(f"Published {produced_count} live fresh records to Kafka...")
+                if produced_count % args.batch_size == 0:
+                    logger.info(f"🎉 Completed batch of {produced_count} fresh daily records published to Kafka...")
+                elif produced_count % 500 == 0:
+                    logger.info(f"Published {produced_count} live records to Kafka...")
                 time.sleep(args.interval_seconds)
         except KeyboardInterrupt:
             logger.info("Keyboard interrupt received.")
