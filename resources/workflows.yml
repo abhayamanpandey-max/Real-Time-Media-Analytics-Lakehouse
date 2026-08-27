@@ -24,7 +24,7 @@ resources:
         - task_key: ingest_bronze
           description: "Fetch all events from the analytics API and write to Bronze Delta table"
           spark_python_task:
-            python_file: ingestion/ingest_run.py
+            python_file: ../ingestion/ingest_run.py
           environment_key: primary
           
         - task_key: transform_silver
@@ -32,7 +32,7 @@ resources:
           depends_on:
             - task_key: ingest_bronze
           spark_python_task:
-            python_file: jobs/silver/silver_transform.py
+            python_file: ../jobs/silver/silver_transform.py
           environment_key: primary
 
         - task_key: build_gold
@@ -40,7 +40,7 @@ resources:
           depends_on:
             - task_key: transform_silver
           spark_python_task:
-            python_file: jobs/gold/gold_run.py
+            python_file: ../jobs/gold/gold_run.py
           environment_key: primary
 
         - task_key: build_platinum
@@ -48,7 +48,7 @@ resources:
           depends_on:
             - task_key: build_gold
           spark_python_task:
-            python_file: jobs/platinum/platinum_run.py
+            python_file: ../jobs/platinum/platinum_run.py
           environment_key: primary
 
       environments:
