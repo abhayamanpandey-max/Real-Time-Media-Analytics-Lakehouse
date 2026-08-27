@@ -33,6 +33,9 @@ dev = [
     "responses>=0.25.0",
 ]
 
+[tool.hatch.build.targets.wheel]
+packages = ["config", "generator", "mock_api", "ingestion", "jobs", "validation"]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -43,6 +46,9 @@ markers = [
     "databricks: marks tests that require a live Databricks Connect session (deselect with -m 'not databricks')",
 ]
 asyncio_mode = "auto"
+filterwarnings = [
+    "ignore::DeprecationWarning:starlette",
+]
 
 [tool.ruff]
 line-length = 120

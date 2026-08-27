@@ -32,7 +32,7 @@ targets:
     mode: development
     default: true
     workspace:
-      host: https://YOUR_WORKSPACE_HOST.azuredatabricks.net  # Replace with your workspace URL
+      host: https://dbc-aa73f553-354d.cloud.databricks.com
     variables:
       catalog: analytics_dev
       lakehouse_env: dev
@@ -40,7 +40,7 @@ targets:
   prod:
     mode: production
     workspace:
-      host: https://YOUR_WORKSPACE_HOST.azuredatabricks.net  # Replace with your workspace URL
+      host: https://dbc-aa73f553-354d.cloud.databricks.com
     variables:
       catalog: analytics_prod
       lakehouse_env: prod
