@@ -84,15 +84,31 @@ class GenieClient:
                 poll_data = poll_resp.json()
                 
                 status = poll_data.get("status")
-                if status == "COMPLETED":
-                    sql = ""
-                    for attachment in poll_data.get("attachments", []):
-                        if attachment.get("type") == "QUERY":
-                            sql = attachment.get("query", "")
-                            break
+                # Genie populates query attachment when SQL generation is complete
+                sql = ""
+                for attachment in poll_data.get("attachments", []):
+                    query_obj = attachment.get("query")
+                    if isinstance(query_obj, dict) and "query" in query_obj:
+                        sql = query_obj["query"]
+                        break
+                    elif isinstance(query_obj, str):
+                        sql = query_obj
+                        break
+                        
+                answer_text = ""
+                for attachment in poll_data.get("attachments", []):
+                    text_obj = attachment.get("text")
+                    if isinstance(text_obj, dict) and "content" in text_obj:
+                        answer_text = text_obj["content"]
+                        break
+                    elif isinstance(text_obj, str):
+                        answer_text = text_obj
+                        break
+
+                if sql or status == "COMPLETED":
                     return {
                         "status": "success",
-                        "answer_text": poll_data.get("content", ""),
+                        "answer_text": answer_text or poll_data.get("content", ""),
                         "generated_sql": sql
                     }
                 elif status == "FAILED":
