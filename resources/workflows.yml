@@ -11,7 +11,7 @@ resources:
       description: "End-to-end pipeline: API ingestion -> Bronze -> Silver -> Gold -> Platinum"
       
       schedule:
-        quartz_cron_expression: "0 0 6 * * ?"
+        quartz_cron_expression: "0 0 */3 * * ?"
         timezone_id: "UTC"
         pause_status: UNPAUSED
 
