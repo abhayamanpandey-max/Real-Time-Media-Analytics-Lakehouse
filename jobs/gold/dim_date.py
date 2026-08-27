@@ -44,11 +44,12 @@ def build_dim_date(spark, config) -> int:
            .withColumn("day_of_week", when(col("pyspark_dow") == 1, 7).otherwise(col("pyspark_dow") - 1)) \
            .withColumn("day_of_week_name", date_format(col("full_date"), "EEEE")) \
            .withColumn("month_period", date_format(col("full_date"), "yyyy-MM")) \
+           .withColumn("quarter_period", concat_ws("-Q", year(col("full_date")), quarter(col("full_date")))) \
            .withColumn("week_period", concat_ws("-W", year(col("full_date")), lpad(weekofyear(col("full_date")).cast("string"), 2, "0"))) \
            .withColumn("is_weekend", when(col("day_of_week").isin([6, 7]), True).otherwise(False))
            
     df = df.select("date_key", "full_date", "calendar_year", "calendar_month", "calendar_month_name", 
-                   "calendar_quarter", "iso_week", "iso_week_year", "day_of_week", "day_of_week_name", 
+                   "calendar_quarter", "quarter_period", "iso_week", "iso_week_year", "day_of_week", "day_of_week_name", 
                    "month_period", "week_period", "is_weekend")
                    
     df.write.format("delta").mode("overwrite").saveAsTable(gold_table)

@@ -35,13 +35,13 @@ GEO_CATALOG = [{"geography_id": f"GEO_{i:03d}", "geography_name": name} for i, n
     "Metro Core", "Rural Belt",
 ], start=1)]
 
-def produce_event(producer: KafkaProducer, topic: str, config: dict = None) -> dict:
+def produce_event(producer: KafkaProducer, topic: str, config: dict = None, max_days_back: int = 365) -> dict:
     prop = random.choice(PROPERTY_CATALOG)
     geo = random.choice(GEO_CATALOG)
     platform = random.choice(ALLOWED_PLATFORMS)
     category = random.choice(ALLOWED_CATEGORIES)
     
-    event_date = date.today() - timedelta(days=random.randint(0, 30))
+    event_date = date.today() - timedelta(days=random.randint(0, max_days_back))
     audience_val = int(np.clip(np.random.normal(250_000, 150_000), 1_000, 5_000_000))
     
     event = AudienceEvent(
@@ -66,7 +66,9 @@ def main():
     parser = argparse.ArgumentParser(description="Synthetic Audience Event Producer")
     parser.add_argument("--env", type=str, default="dev", help="Environment (dev, prod, etc)")
     parser.add_argument("--interval-seconds", type=float, default=1.0, help="Interval between events")
-    parser.add_argument("--once", action="store_true", help="Produce one batch then exit")
+    parser.add_argument("--days-back", type=int, default=365, help="Max days back for event_date range")
+    parser.add_argument("--batch-size", type=int, default=500, help="Number of events to produce in --once mode")
+    parser.add_argument("--once", action="store_true", help="Produce a batch of events then exit")
     args = parser.parse_args()
 
     config = load_config(args.env)
@@ -88,17 +90,18 @@ def main():
 
     signal.signal(signal.SIGINT, signal_handler)
     
-    logger.info(f"Starting producer loop. Topic: {topic}, Interval: {args.interval_seconds}s")
+    logger.info(f"Starting producer loop. Topic: {topic}, Max Days Back: {args.days_back}")
     
     try:
-        while keep_running:
-            event = produce_event(producer, topic, config)
-            logger.debug(f"Published event: {event['event_id']}")
-            
-            if args.once:
-                break
-                
-            time.sleep(args.interval_seconds)
+        if args.once:
+            logger.info(f"Producing batch of {args.batch_size} events across past {args.days_back} days...")
+            for _ in range(args.batch_size):
+                produce_event(producer, topic, config, max_days_back=args.days_back)
+        else:
+            while keep_running:
+                event = produce_event(producer, topic, config, max_days_back=args.days_back)
+                logger.debug(f"Published event: {event['event_id']}")
+                time.sleep(args.interval_seconds)
     except KeyboardInterrupt:
         logger.info("Keyboard interrupt received.")
     finally:

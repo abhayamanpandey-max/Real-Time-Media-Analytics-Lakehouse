@@ -57,6 +57,18 @@ def build_mart_audience_rankings(spark, config) -> int:
         F.sum("audience_value").alias("total_audience")
     )
 
+    quarterly_df = df.groupBy(
+        F.col("quarter_period").alias("report_period"),
+        F.lit("QUARTERLY").alias("report_period_type"),
+        F.col("platform"),
+        F.col("platform_display_name"),
+        F.col("geography_name"),
+        F.col("property_name"),
+        F.col("property_id")
+    ).agg(
+        F.sum("audience_value").alias("total_audience")
+    )
+
     weekly_df = df.groupBy(
         F.col("week_period").alias("report_period"),
         F.lit("WEEKLY").alias("report_period_type"),
@@ -69,7 +81,7 @@ def build_mart_audience_rankings(spark, config) -> int:
         F.sum("audience_value").alias("total_audience")
     )
 
-    combined_df = monthly_df.unionByName(weekly_df)
+    combined_df = monthly_df.unionByName(quarterly_df).unionByName(weekly_df)
 
     partition_cols = ["report_period", "report_period_type", "platform", "geography_name"]
     rank_window = Window.partitionBy(*partition_cols).orderBy(F.col("total_audience").desc())

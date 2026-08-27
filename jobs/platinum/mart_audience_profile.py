@@ -48,10 +48,13 @@ def build_mart_audience_profile(spark, config) -> int:
     monthly_detail = df.withColumn("report_period", F.col("month_period")) \
                        .withColumn("report_period_type", F.lit("MONTHLY"))
                        
+    quarterly_detail = df.withColumn("report_period", F.col("quarter_period")) \
+                         .withColumn("report_period_type", F.lit("QUARTERLY"))
+
     weekly_detail = df.withColumn("report_period", F.col("week_period")) \
                       .withColumn("report_period_type", F.lit("WEEKLY"))
                       
-    union_detail = monthly_detail.unionByName(weekly_detail)
+    union_detail = monthly_detail.unionByName(quarterly_detail).unionByName(weekly_detail)
     
     peak_window = Window.partitionBy(
         "property_name", "property_id", "report_period", "report_period_type", 
