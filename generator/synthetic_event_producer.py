@@ -65,11 +65,12 @@ def produce_event(producer: KafkaProducer, topic: str, config: dict = None, max_
 def main():
     parser = argparse.ArgumentParser(description="Synthetic Audience Event Producer")
     parser.add_argument("--env", type=str, default="dev", help="Environment (dev, prod, etc)")
-    parser.add_argument("--interval-seconds", type=float, default=0.36, help="Interval between events (default 0.36s for ~5000 in 30m)")
+    parser.add_argument("--interval-seconds", type=float, default=1.0, help="Interval between events (seconds)")
     parser.add_argument("--days-back", type=int, default=365, help="Max days back for event_date range")
-    parser.add_argument("--batch-size", type=int, default=5000, help="Max number of events to produce")
-    parser.add_argument("--duration-minutes", type=float, default=30.0, help="Max runtime in minutes for continuous stream")
-    parser.add_argument("--once", action="store_true", help="Produce a batch of events then exit immediately")
+    parser.add_argument("--batch-size", type=int, default=5000, help="Max number of events in batch mode")
+    parser.add_argument("--duration-minutes", type=float, default=0.0, help="Max runtime in minutes (0 = continuous/unbounded)")
+    parser.add_argument("--continuous", action="store_true", help="Run 24/7 continuous stream of fresh daily events")
+    parser.add_argument("--once", action="store_true", help="Produce one batch of events then exit immediately")
     args = parser.parse_args()
 
     config = load_config(args.env)
@@ -91,32 +92,42 @@ def main():
 
     signal.signal(signal.SIGINT, signal_handler)
     
-    logger.info(f"Starting producer loop. Topic: {topic}, Target Batch Size: {args.batch_size}, Max Duration: {args.duration_minutes}m")
-    
     start_time = time.time()
-    max_duration_sec = args.duration_minutes * 60.0
     produced_count = 0
     
-    try:
-        if args.once:
-            logger.info(f"Producing batch of {args.batch_size} events across past {args.days_back} days...")
-            for _ in range(args.batch_size):
-                produce_event(producer, topic, config, max_days_back=args.days_back)
-        else:
+    if args.continuous or (not args.once and args.duration_minutes == 0):
+        logger.info(f"Starting 24/7 CONTINUOUS streaming mode on topic '{topic}' (fresh daily records)...")
+        try:
+            while keep_running:
+                # In continuous mode, produce live fresh records (0-1 days back)
+                produce_event(producer, topic, config, max_days_back=1)
+                produced_count += 1
+                if produced_count % 100 == 0:
+                    logger.info(f"Published {produced_count} live fresh records to Kafka...")
+                time.sleep(args.interval_seconds)
+        except KeyboardInterrupt:
+            logger.info("Keyboard interrupt received.")
+    elif args.once:
+        logger.info(f"Producing batch of {args.batch_size} events across past {args.days_back} days...")
+        for _ in range(args.batch_size):
+            produce_event(producer, topic, config, max_days_back=args.days_back)
+        logger.info(f"Batch run complete: {args.batch_size} events produced.")
+    else:
+        max_duration_sec = args.duration_minutes * 60.0
+        logger.info(f"Starting timed streaming run: {args.duration_minutes}m duration, {args.batch_size} max events...")
+        try:
             while keep_running and produced_count < args.batch_size:
                 elapsed = time.time() - start_time
                 if elapsed >= max_duration_sec:
                     logger.info(f"Max duration of {args.duration_minutes} minutes reached.")
                     break
-                    
                 produce_event(producer, topic, config, max_days_back=args.days_back)
                 produced_count += 1
-                
                 if produced_count % 500 == 0:
                     logger.info(f"Produced {produced_count}/{args.batch_size} events ({elapsed/60.0:.1f}m elapsed)...")
-                    
                 time.sleep(args.interval_seconds)
-            logger.info(f"Streaming run complete. Total produced: {produced_count} events in {(time.time()-start_time)/60.0:.1f}m.")
+        except KeyboardInterrupt:
+            logger.info("Keyboard interrupt received.")
     except KeyboardInterrupt:
         logger.info("Keyboard interrupt received.")
     finally:
