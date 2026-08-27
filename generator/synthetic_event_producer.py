@@ -95,9 +95,9 @@ def main():
     start_time = time.time()
     produced_count = 0
     
-    if args.continuous or (not args.once and args.duration_minutes == 0):
-        logger.info(f"Starting 24/7 CONTINUOUS streaming mode on topic '{topic}' (batch size target: {args.batch_size}, fresh daily records)...")
-        try:
+    try:
+        if args.continuous or (not args.once and args.duration_minutes == 0):
+            logger.info(f"Starting 24/7 CONTINUOUS streaming mode on topic '{topic}' (batch size target: {args.batch_size}, fresh daily records)...")
             while keep_running:
                 produce_event(producer, topic, config, max_days_back=1)
                 produced_count += 1
@@ -106,17 +106,14 @@ def main():
                 elif produced_count % 500 == 0:
                     logger.info(f"Published {produced_count} live records to Kafka...")
                 time.sleep(args.interval_seconds)
-        except KeyboardInterrupt:
-            logger.info("Keyboard interrupt received.")
-    elif args.once:
-        logger.info(f"Producing batch of {args.batch_size} events across past {args.days_back} days...")
-        for _ in range(args.batch_size):
-            produce_event(producer, topic, config, max_days_back=args.days_back)
-        logger.info(f"Batch run complete: {args.batch_size} events produced.")
-    else:
-        max_duration_sec = args.duration_minutes * 60.0
-        logger.info(f"Starting timed streaming run: {args.duration_minutes}m duration, {args.batch_size} max events...")
-        try:
+        elif args.once:
+            logger.info(f"Producing batch of {args.batch_size} events across past {args.days_back} days...")
+            for _ in range(args.batch_size):
+                produce_event(producer, topic, config, max_days_back=args.days_back)
+            logger.info(f"Batch run complete: {args.batch_size} events produced.")
+        else:
+            max_duration_sec = args.duration_minutes * 60.0
+            logger.info(f"Starting timed streaming run: {args.duration_minutes}m duration, {args.batch_size} max events...")
             while keep_running and produced_count < args.batch_size:
                 elapsed = time.time() - start_time
                 if elapsed >= max_duration_sec:
@@ -127,8 +124,6 @@ def main():
                 if produced_count % 500 == 0:
                     logger.info(f"Produced {produced_count}/{args.batch_size} events ({elapsed/60.0:.1f}m elapsed)...")
                 time.sleep(args.interval_seconds)
-        except KeyboardInterrupt:
-            logger.info("Keyboard interrupt received.")
     except KeyboardInterrupt:
         logger.info("Keyboard interrupt received.")
     finally:
