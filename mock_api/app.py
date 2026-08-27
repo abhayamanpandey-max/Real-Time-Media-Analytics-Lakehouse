@@ -52,9 +52,20 @@ def consume_kafka_events():
                         event_buffer.append(msg.value)
             except Exception as e:
                 logger.error(f"Error reading from kafka: {e}")
-                time.sleep(1) # Backoff
+                time.sleep(1)
     except Exception as e:
-        logger.error(f"Failed to start Kafka consumer: {e}")
+        logger.warning(f"Kafka unavailable ({e}). Starting cloud auto-generator background thread on Render...")
+        from generator.synthetic_event_producer import produce_event
+        # Pre-seed buffer with 500 records
+        for _ in range(500):
+            evt = produce_event(producer=None, topic="", config=config)
+            event_buffer.append(evt)
+            
+        while consumer_thread_running:
+            evt = produce_event(producer=None, topic="", config=config, max_days_back=365)
+            with buffer_lock:
+                event_buffer.append(evt)
+            time.sleep(1.0)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -106,4 +117,6 @@ def get_events_count():
         return {"total": len(event_buffer)}
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    import os
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("mock_api.app:app", host="0.0.0.0", port=port)

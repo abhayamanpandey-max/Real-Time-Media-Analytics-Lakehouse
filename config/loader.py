@@ -97,8 +97,15 @@ def load_config(env: str | None = None) -> dict[str, Any]:
 
     # Only resolve env vars for prod (dev has literal values).
     if env == "prod":
-        return _resolve_recursive(raw)
-    return raw
+        config = _resolve_recursive(raw)
+    else:
+        config = raw
+
+    # Allow dynamic override of API base URL via API_BASE_URL env var (e.g. Render cloud deployment)
+    if "API_BASE_URL" in os.environ and "api" in config:
+        config["api"]["base_url"] = os.environ["API_BASE_URL"].rstrip("/")
+
+    return config
 
 
 def get_full_table_name(config: dict, layer: str, table_key: str) -> str:
