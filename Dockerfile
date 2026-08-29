@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf 
 
 # Install uv and dependencies
 COPY pyproject.toml /app/
-RUN pip install --no-cache-dir uv && uv pip install --system .
+RUN pip install --no-cache-dir .
 
 # Copy application source
 COPY . /app
