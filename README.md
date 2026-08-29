@@ -30,12 +30,12 @@ The platform operates as a continuous cloud pipeline. The ingestion layer runs c
 
 ```mermaid
 flowchart TD
-    subgraph AWS EC2 Continuous Ingestion Host
+    subgraph "AWS EC2 Continuous Ingestion Host"
         G[Synthetic Event Generator] -->|Produces Events| K[(Kafka KRaft - Docker)]
         K --> M[FastAPI Mock API - Port 8000]
     end
 
-    subgraph Databricks Cloud Execution (Every 3 Hours)
+    subgraph "Databricks Cloud Execution (Every 3 Hours)"
         M -->|Config-driven HTTP Client| B[(Bronze Layer: Raw Append-Only)]
         B -->|7 Composable DQ Rules| S[(Silver Layer: Cleansed & Standardized)]
         S -.->|Quarantine Rejections| Q[(Silver Quarantine Table)]
@@ -43,7 +43,7 @@ flowchart TD
         G_L -->|Pre-aggregated Marts| P[(Platinum Layer: Monthly, Weekly, Quarterly)]
     end
 
-    subgraph Analytical & GenAI Layer
+    subgraph "Analytical & GenAI Layer"
         P -->|3 Curated Semantic Views| Sem[Semantic Layer]
         Sem -->|NL-to-SQL Querying| Genie[Databricks Genie AI Assistant]
     end
@@ -187,4 +187,4 @@ Or pass `API_BASE_URL=http://<YOUR_EC2_PUBLIC_IP>:8000` directly as an environme
 
 ---
 
-*Built by Abhay Aman Pandey*
+*Built by Abhay Sunil Pandey*
