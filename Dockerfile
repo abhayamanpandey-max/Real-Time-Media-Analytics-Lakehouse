@@ -6,12 +6,11 @@ WORKDIR /app
 # Install curl for healthchecks
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
-# Install uv and dependencies
-COPY pyproject.toml /app/
-RUN pip install --no-cache-dir .
-
 # Copy application source
 COPY . /app
+
+# Install dependencies and project
+RUN pip install --no-cache-dir .
 
 # Default port exposure
 EXPOSE 8000
