@@ -20,6 +20,13 @@ import sys
 import time
 import uuid
 
+from config.loader import load_config
+from ingestion.api_client import fetch_all_events
+from ingestion.bronze_writer import write_bronze
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 def get_spark():
     try:
         from pyspark.sql import SparkSession
@@ -29,16 +36,43 @@ def get_spark():
         return DatabricksSession.builder.getOrCreate()
 
 
+def get_api_base_url(config: dict) -> str:
+    # 1. Try environment variable
+    env_url = os.environ.get("API_BASE_URL")
+    if env_url:
+        return env_url.rstrip("/")
+
+    # 2. Try dbutils widget parameter
+    try:
+        from pyspark.dbutils import DBUtils
+        spark = get_spark()
+        dbutils = DBUtils(spark)
+        param_url = dbutils.widgets.get("API_BASE_URL")
+        if param_url:
+            return param_url.rstrip("/")
+    except Exception:
+        pass
+
+    # 3. Read config base_url
+    config_url = config.get("api", {}).get("base_url", "")
+    if config_url and "YOUR_EC2_PUBLIC_IP" not in config_url and "localhost" not in config_url:
+        return config_url.rstrip("/")
+
+    # Default fallback to live EC2 host
+    return "http://13.201.159.64:8000"
+
+
 def main():
     try:
         start_time = time.time()
         env = os.environ.get("LAKEHOUSE_ENV", "dev")
         config = load_config(env)
+        config["api"]["base_url"] = get_api_base_url(config)
 
         spark = get_spark()
         run_id = str(uuid.uuid4())
 
-        logger.info(f"Starting ingestion run_id={run_id} env={env}")
+        logger.info(f"Starting ingestion run_id={run_id} env={env} api_base_url={config['api']['base_url']}")
 
         events = fetch_all_events(config)
         rows_written = 0

@@ -69,6 +69,8 @@ resources:
       parameters:
         - name: LAKEHOUSE_ENV
           default: "${var.lakehouse_env}"
+        - name: API_BASE_URL
+          default: "http://13.201.159.64:8000"
 
       tags:
         project: real-time-media-analytics-lakehouse
