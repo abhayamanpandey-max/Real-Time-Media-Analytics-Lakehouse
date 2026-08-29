@@ -101,7 +101,7 @@ def load_config(env: str | None = None) -> dict[str, Any]:
     else:
         config = raw
 
-    # Allow dynamic override of API base URL via API_BASE_URL env var (e.g. Render cloud deployment)
+    # Allow dynamic override of API base URL via API_BASE_URL env var (e.g. EC2 public IP/domain)
     if "API_BASE_URL" in os.environ and "api" in config:
         config["api"]["base_url"] = os.environ["API_BASE_URL"].rstrip("/")
 

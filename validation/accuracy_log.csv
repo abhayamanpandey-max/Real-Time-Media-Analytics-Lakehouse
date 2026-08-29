@@ -1,1 +1,45 @@
 run_timestamp,question_id,question_text,expected_asset,status,generated_sql,notes,duration_seconds
+2026-08-27T10:05:04.646020+00:00,Q001,Which property had the highest total audience in the most recent monthly period?,sem_audience_rankings,SKIP,,Dry run,0.0
+2026-08-27T10:05:04.646020+00:00,Q002,What are the top 5 properties by audience share in the US for Q3?,sem_audience_rankings,SKIP,,Dry run,0.0
+2026-08-27T10:05:04.646020+00:00,Q003,How did property XYZ rank globally in the most recent weekly period?,sem_audience_rankings,SKIP,,Dry run,0.0
+2026-08-27T10:05:04.646020+00:00,Q004,Which properties had an audience share greater than 5% in the last monthly period?,sem_audience_rankings,SKIP,,Dry run,0.0
+2026-08-27T10:05:04.646020+00:00,Q005,Who were the bottom 10 properties in total audience for the yearly period?,sem_audience_rankings,SKIP,,Dry run,0.0
+2026-08-27T10:05:04.646020+00:00,Q006,What is the average total audience for the top 3 properties monthly?,sem_audience_rankings,SKIP,,Dry run,0.0
+2026-08-27T10:05:04.646020+00:00,Q007,Did property ABC move up or down in rank this month compared to last month?,sem_audience_rankings,SKIP,,Dry run,0.0
+2026-08-27T10:05:04.646020+00:00,Q008,Which property had the largest jump in audience share this week?,sem_audience_rankings,SKIP,,Dry run,0.0
+2026-08-27T10:05:04.646020+00:00,Q009,What is the audience profile breakdown by platform for property XYZ?,sem_audience_profile,SKIP,,Dry run,0.0
+2026-08-27T10:05:04.646020+00:00,Q010,Which region has the highest concentration of mobile users for property ABC?,sem_audience_profile,SKIP,,Dry run,0.0
+2026-08-27T10:05:04.646020+00:00,Q011,Compare the desktop vs mobile audience for property LMN in Europe.,sem_audience_profile,SKIP,,Dry run,0.0
+2026-08-27T10:05:04.646020+00:00,Q012,What percentage of property PQR's audience is in Asia?,sem_audience_profile,SKIP,,Dry run,0.0
+2026-08-27T10:05:04.646020+00:00,Q013,Which platform drives the most audience for property DEF globally?,sem_audience_profile,SKIP,,Dry run,0.0
+2026-08-27T10:05:04.646020+00:00,Q014,List all properties where Smart TV audience exceeds Mobile audience in the US.,sem_audience_profile,SKIP,,Dry run,0.0
+2026-08-27T10:05:04.646020+00:00,Q015,What is the total audience size for property GHI across all platforms in LATAM?,sem_audience_profile,SKIP,,Dry run,0.0
+2026-08-27T10:05:04.646020+00:00,Q016,Show the regional distribution of Connected TV audience for property JKL.,sem_audience_profile,SKIP,,Dry run,0.0
+2026-08-27T10:05:04.646020+00:00,Q017,What is the audience overlap index between property ABC and XYZ?,sem_cross_property_comparison,SKIP,,Dry run,0.0
+2026-08-27T10:05:04.646020+00:00,Q018,Which property has the highest audience index correlation with property LMN?,sem_cross_property_comparison,SKIP,,Dry run,0.0
+2026-08-27T10:05:04.646020+00:00,Q019,Are audiences for property DEF and GHI highly correlated (index > 120)?,sem_cross_property_comparison,SKIP,,Dry run,0.0
+2026-08-27T10:05:04.646020+00:00,Q020,List the top 5 properties with the lowest audience index compared to property PQR.,sem_cross_property_comparison,SKIP,,Dry run,0.0
+2026-08-27T10:05:04.646020+00:00,Q021,What is the average audience index between the top 3 network properties?,sem_cross_property_comparison,SKIP,,Dry run,0.0
+2026-08-27T10:05:04.646020+00:00,Q022,Which media property had the most viewers last month?,sem_audience_rankings,SKIP,,Dry run,0.0
+2026-08-27T10:05:04.646020+00:00,Q023,Give me the US top 5 properties by audience share Q3,sem_audience_rankings,SKIP,,Dry run,0.0
+2026-08-27T10:05:04.646020+00:00,Q024,XYZ audience by platform,sem_audience_profile,SKIP,,Dry run,0.0
+2026-08-27T10:05:04.646020+00:00,Q025,Audience index of ABC vs XYZ,sem_cross_property_comparison,SKIP,,Dry run,0.0
+2026-08-27T10:06:07.099842+00:00,Q001,Which property had the highest total audience in the most recent monthly period?,sem_audience_rankings,FAIL,,"Missing keywords: sem_audience_rankings, rank, MONTHLY",20.26
+2026-08-27T10:07:15.025617+00:00,Q001,Which property had the highest total audience in the most recent monthly period?,sem_audience_rankings,PASS,"WITH latest_month AS (
+  SELECT MAX(`period`) AS max_period
+  FROM `analytics_dev`.`semantic`.`sem_audience_rankings`
+  WHERE `period_type` = 'MONTHLY' AND `period` IS NOT NULL
+), ranked_properties AS (
+  SELECT
+    `property`,
+    `property_id`,
+    `period`,
+    `total_audience`,
+    RANK() OVER (ORDER BY `total_audience` DESC) AS rnk
+  FROM `analytics_dev`.`semantic`.`sem_audience_rankings`
+  WHERE `period_type` = 'MONTHLY' AND `period` IS NOT NULL AND `total_audience` IS NOT NULL
+    AND `period` = (SELECT max_period FROM latest_month)
+)
+SELECT `property`, `property_id`, `period`, `total_audience`
+FROM ranked_properties
+WHERE rnk = 1;",All keywords found,11.2

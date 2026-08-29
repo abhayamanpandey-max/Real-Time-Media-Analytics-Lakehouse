@@ -1,16 +1,20 @@
-# Local dev Kafka cluster using KRaft (no Zookeeper dependency).
-# Usage:
-#   docker compose -f docker/docker-compose.yml up -d
+# Production/EC2 Docker Compose stack for Real-Time Media Analytics Lakehouse Ingestion.
+# All services run continuously on AWS EC2 with automatic restarts.
+#
+# Usage on EC2:
+#   docker compose -f docker/docker-compose.yml up -d --build
 #   docker compose -f docker/docker-compose.yml down -v
 #
-# Kafka UI is available at http://localhost:8080
-# Kafka broker is available at localhost:9092
+# External Endpoints:
+#   Mock API: http://<EC2_PUBLIC_IP>:8000/health
+#   Kafka UI: http://<EC2_PUBLIC_IP>:8080
 
 services:
   kafka:
     image: confluentinc/cp-kafka:7.7.0
     hostname: kafka
     container_name: lakehouse-kafka
+    restart: always
     ports:
       - "9092:9092"
       - "9101:9101"
@@ -27,12 +31,12 @@ services:
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_LOG_DIRS: "/tmp/kraft-combined-logs"
+      KAFKA_LOG_DIRS: "/var/lib/kafka/data"
       CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
       KAFKA_JMX_PORT: 9101
       KAFKA_JMX_HOSTNAME: localhost
     volumes:
-      - kafka-data:/tmp/kraft-combined-logs
+      - kafka-data:/var/lib/kafka/data
     healthcheck:
       test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
       interval: 10s
@@ -40,16 +44,53 @@ services:
       retries: 10
       start_period: 30s
 
+  generator:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: lakehouse-generator
+    restart: always
+    command: python -m generator.synthetic_event_producer --env dev --continuous --interval-seconds 1.0
+    environment:
+      LAKEHOUSE_ENV: dev
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  mock_api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: lakehouse-mock-api
+    restart: always
+    command: python -m uvicorn mock_api.app:app --host 0.0.0.0 --port 8000
+    ports:
+      - "0.0.0.0:8000:8000"
+    environment:
+      LAKEHOUSE_ENV: dev
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: lakehouse-kafka-ui
+    restart: always
     depends_on:
       kafka:
         condition: service_healthy
     ports:
       - "8080:8080"
     environment:
-      KAFKA_CLUSTERS_0_NAME: local-dev
+      KAFKA_CLUSTERS_0_NAME: ec2-dev
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
       DYNAMIC_CONFIG_ENABLED: "true"
 

@@ -5,7 +5,7 @@
 env: dev
 
 api:
-  base_url: "http://localhost:8000"
+  base_url: "http://<YOUR_EC2_PUBLIC_IP>:8000"  # Replace with provisioned EC2 public IP/domain (e.g. http://54.123.45.67:8000)
   token: "dev-bearer-token-local"
   page_size: 100
   max_pages: 50

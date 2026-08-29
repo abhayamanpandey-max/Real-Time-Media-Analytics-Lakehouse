@@ -54,7 +54,7 @@ def consume_kafka_events():
                 logger.error(f"Error reading from kafka: {e}")
                 time.sleep(1)
     except Exception as e:
-        logger.warning(f"Kafka unavailable ({e}). Starting cloud auto-generator background thread on Render...")
+        logger.warning(f"Kafka unavailable ({e}). Starting standalone background generator thread...")
         from generator.synthetic_event_producer import produce_event
         # Pre-seed buffer with 500 records
         for _ in range(500):
