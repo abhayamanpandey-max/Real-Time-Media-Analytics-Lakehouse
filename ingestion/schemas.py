@@ -39,4 +39,5 @@ BRONZE_SCHEMA = StructType([
     StructField("_source_api_page",    IntegerType(),   nullable=False),
     StructField("_bronze_ingested_at", TimestampType(), nullable=False),
     StructField("_bronze_run_id",      StringType(),    nullable=False),
+    StructField("_ingestion_source",   StringType(),    nullable=False),  # 'live' | 'fallback'
 ])

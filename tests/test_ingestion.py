@@ -10,6 +10,7 @@ Integration tests (actual Delta write) require Databricks Connect.
 from unittest.mock import MagicMock
 
 import pytest
+import requests
 import responses
 
 from config.loader import get_full_table_name
@@ -26,8 +27,10 @@ def test_fetch_all_events_single_page(mock_config):
         status=200,
     )
 
-    events = fetch_all_events(mock_config)
+    events, fallback_used = fetch_all_events(mock_config)
     assert len(events) == 3
+    assert fallback_used is False
+    assert events[0]["_ingestion_source"] == "live"
 
 
 @responses.activate
@@ -51,8 +54,9 @@ def test_fetch_all_events_multiple_pages(mock_config):
         status=200,
     )
 
-    events = fetch_all_events(mock_config)
+    events, fallback_used = fetch_all_events(mock_config)
     assert len(events) == 30
+    assert fallback_used is False
 
 
 @responses.activate
@@ -71,8 +75,9 @@ def test_fetch_all_events_stops_at_max_pages(mock_config):
         status=200,
     )
 
-    events = fetch_all_events(mock_config)
+    events, fallback_used = fetch_all_events(mock_config)
     assert len(events) == 20
+    assert fallback_used is False
 
 
 @responses.activate
@@ -102,8 +107,9 @@ def test_fetch_all_events_retries_on_500(mock_config, mocker):
         status=200,
     )
 
-    events = fetch_all_events(mock_config)
+    events, fallback_used = fetch_all_events(mock_config)
     assert len(events) == 1
+    assert fallback_used is False
 
 
 @responses.activate
@@ -116,7 +122,24 @@ def test_fetch_all_events_auth_header(mock_config):
         match=[responses.matchers.header_matcher({"Authorization": "Bearer test-token"})],
     )
 
-    fetch_all_events(mock_config)
+    events, fallback_used = fetch_all_events(mock_config)
+    assert fallback_used is False
+
+
+@responses.activate
+def test_fetch_all_events_triggers_fallback_flag(mock_config, mocker):
+    mocker.patch("time.sleep", return_value=None)
+    # Simulate connection error for all attempts
+    responses.add(
+        responses.GET,
+        "http://testserver/events?page=1&page_size=10",
+        body=requests.exceptions.ConnectionError("Connection refused"),
+    )
+
+    events, fallback_used = fetch_all_events(mock_config)
+    assert fallback_used is True
+    assert len(events) == 500
+    assert events[0]["_ingestion_source"] == "fallback"
 
 
 def test_write_bronze_mode_is_always_append(sample_events, mock_config):

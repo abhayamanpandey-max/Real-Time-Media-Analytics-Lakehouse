@@ -24,7 +24,7 @@ class ApiClientError(Exception):
     pass
 
 
-def fetch_all_events(config: dict) -> list[dict]:
+def fetch_all_events(config: dict) -> tuple[list[dict], bool]:
     """
     Fetch all paginated events from the API.
 
@@ -32,7 +32,9 @@ def fetch_all_events(config: dict) -> list[dict]:
         config: Loaded configuration dictionary containing API settings.
 
     Returns:
-        A list of raw event dictionaries.
+        A tuple of (events_list, fallback_used_flag).
+        - events_list: List of raw event dicts, each tagged with '_ingestion_source'.
+        - fallback_used_flag: True if fallback in-memory generator was used, False if live API was queried.
     """
     api_config = config.get("api", {})
     base_url = api_config.get("base_url")
@@ -68,6 +70,8 @@ def fetch_all_events(config: dict) -> list[dict]:
 
                 data = response.json()
                 events = data.get("events", [])
+                for evt in events:
+                    evt["_ingestion_source"] = "live"
                 all_events.extend(events)
                 has_next = data.get("has_next", False)
 
@@ -81,11 +85,15 @@ def fetch_all_events(config: dict) -> list[dict]:
                     logger.warning(f"Error fetching page {page}: {e}. Retrying in {sleep_time}s...")
                     time.sleep(sleep_time)
                 else:
-                    logger.warning(f"API endpoint {url} unreachable after {max_retries} retries ({e}). Falling back to synthetic event generator for cloud run.")
+                    logger.warning(f"FALLBACK_USED=true: API endpoint {url} unreachable after {max_retries} retries ({e}). Falling back to synthetic event generator for in-memory generation.")
                     # Fallback: Generate 500 synthetic events directly in memory so Bronze ingestion never fails
                     from generator.synthetic_event_producer import produce_event
-                    synthetic_events = [produce_event(producer=None, topic="", config=config) for _ in range(500)]
-                    return synthetic_events
+                    synthetic_events = []
+                    for _ in range(500):
+                        evt = produce_event(producer=None, topic="", config=config)
+                        evt["_ingestion_source"] = "fallback"
+                        synthetic_events.append(evt)
+                    return synthetic_events, True
             except ApiClientError:
                 raise
             except Exception as e:
@@ -96,5 +104,5 @@ def fetch_all_events(config: dict) -> list[dict]:
 
         page += 1
 
-    logger.info(f"Finished fetching {len(all_events)} total events.")
-    return all_events
+    logger.info(f"Finished fetching {len(all_events)} total events from live API (FALLBACK_USED=false).")
+    return all_events, False

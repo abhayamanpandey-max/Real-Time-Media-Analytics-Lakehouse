@@ -53,6 +53,8 @@ def write_bronze(
     for event in events:
         event["_source_api_page"] = source_page
         event["_bronze_run_id"] = run_id
+        if "_ingestion_source" not in event:
+            event["_ingestion_source"] = "live"
         # _bronze_ingested_at will be added by spark as current_timestamp
 
     df = spark.createDataFrame(events, schema=BRONZE_SCHEMA)

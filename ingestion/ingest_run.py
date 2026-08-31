@@ -62,6 +62,19 @@ def get_api_base_url(config: dict) -> str:
     return "http://13.201.159.64:8000"
 
 
+def get_git_commit() -> str:
+    """Retrieve current git commit hash, returning 'unknown' if unavailable."""
+    try:
+        import subprocess
+        return subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except Exception:
+        return "unknown"
+
+
 def main():
     try:
         start_time = time.time()
@@ -71,17 +84,22 @@ def main():
 
         spark = get_spark()
         run_id = str(uuid.uuid4())
+        commit_hash = get_git_commit()
 
-        logger.info(f"Starting ingestion run_id={run_id} env={env} api_base_url={config['api']['base_url']}")
+        logger.info(f"Starting ingestion run_id={run_id} env={env} git_commit={commit_hash} api_base_url={config['api']['base_url']}")
 
-        events = fetch_all_events(config)
+        events, fallback_used = fetch_all_events(config)
         rows_written = 0
 
         if events:
             rows_written = write_bronze(spark, events, config, run_id)
 
         duration_seconds = time.time() - start_time
-        logger.info(f"Run summary: run_id={run_id} env={env} events_fetched={len(events)} rows_written={rows_written} duration_seconds={duration_seconds:.2f}")
+        logger.info(
+            f"Run summary: run_id={run_id} env={env} events_fetched={len(events)} "
+            f"rows_written={rows_written} fallback_used={fallback_used} git_commit={commit_hash} "
+            f"duration_seconds={duration_seconds:.2f}"
+        )
 
         sys.exit(0)
     except Exception as e:

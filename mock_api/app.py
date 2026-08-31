@@ -67,9 +67,23 @@ def consume_kafka_events():
                 event_buffer.append(evt)
             time.sleep(1.0)
 
+def get_git_commit() -> str:
+    """Retrieve current git commit hash, returning 'unknown' if unavailable."""
+    try:
+        import subprocess
+        return subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except Exception:
+        return "unknown"
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global consumer_thread_running
+    commit_hash = get_git_commit()
+    logger.info(f"Starting Mock API service (git_commit={commit_hash})")
     consumer_thread_running = True
     thread = threading.Thread(target=consume_kafka_events, daemon=True)
     thread.start()
