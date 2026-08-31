@@ -6,8 +6,9 @@
 #   docker compose -f docker/docker-compose.yml down -v
 #
 # External Endpoints:
-#   Mock API: http://<EC2_PUBLIC_IP>:8000/health
-#   Kafka UI: http://<EC2_PUBLIC_IP>:8080
+#   Mock API:      http://<EC2_PUBLIC_IP>:8000/health
+#   Kafka UI:      http://<EC2_PUBLIC_IP>:8080
+#   Client AI UI:  http://<EC2_PUBLIC_IP>:8050
 
 services:
   kafka:
@@ -79,6 +80,20 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+
+  client_portal:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: lakehouse-client-portal
+    restart: always
+    command: python -m validation.genie_client_portal --port 8050
+    ports:
+      - "0.0.0.0:8050:8050"
+    environment:
+      DATABRICKS_HOST: "https://dbc-aa73f553-354d.cloud.databricks.com"
+      DATABRICKS_TOKEN: "${DATABRICKS_TOKEN}"
+      GENIE_SPACE_ID: "01f1a1fd42bf12c9b418f72e196ce123"
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
