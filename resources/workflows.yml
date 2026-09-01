@@ -1,14 +1,14 @@
 # resources/workflows.yml
 # Defines the Media Analytics Lakehouse pipeline as a Databricks Workflow.
-# Schedule: Daily at 06:00 UTC.
-# Tasks run in dependency order: ingest -> silver -> gold -> platinum.
-# Each task sets LAKEHOUSE_ENV from the bundle variable.
+# Schedule: Every 3 hours (0 0 */3 * * ?).
+# Tasks run in dependency order: ingest -> silver -> gold -> platinum -> semantic.
+# Orchestration uses notebook_task with parameters passed via dbutils.widgets.
 
 resources:
   jobs:
     media_analytics_lakehouse_pipeline:
       name: "[${bundle.target}] Media Analytics Lakehouse Pipeline"
-      description: "End-to-end pipeline: API ingestion -> Bronze -> Silver -> Gold -> Platinum"
+      description: "End-to-end pipeline: API ingestion -> Bronze -> Silver -> Gold -> Platinum -> Semantic"
       
       schedule:
         quartz_cron_expression: "0 0 */3 * * ?"
@@ -23,49 +23,38 @@ resources:
       tasks:
         - task_key: ingest_bronze
           description: "Fetch all events from the analytics API and write to Bronze Delta table"
-          spark_python_task:
-            python_file: ../ingestion/ingest_run.py
-          environment_key: primary
+          notebook_task:
+            notebook_path: ../notebooks/01_ingest_bronze.py
           
         - task_key: transform_silver
           description: "Apply all 7 DQ rules, write clean data to Silver, rejections to Quarantine"
           depends_on:
             - task_key: ingest_bronze
-          spark_python_task:
-            python_file: ../jobs/silver/silver_transform.py
-          environment_key: primary
+          notebook_task:
+            notebook_path: ../notebooks/02_silver_transform.py
 
         - task_key: build_gold
           description: "Build star schema: 5 dimension tables + fact_audience"
           depends_on:
             - task_key: transform_silver
-          spark_python_task:
-            python_file: ../jobs/gold/gold_run.py
-          environment_key: primary
+          notebook_task:
+            notebook_path: ../notebooks/03_build_gold.py
 
         - task_key: build_platinum
-          description: "Build analytical marts: audience_rankings + audience_profile (monthly + weekly)"
+          description: "Build analytical marts: audience_rankings + audience_profile"
           depends_on:
             - task_key: build_gold
-          spark_python_task:
-            python_file: ../jobs/platinum/platinum_run.py
-          environment_key: primary
+          notebook_task:
+            notebook_path: ../notebooks/04_build_platinum.py
 
-      environments:
-        - environment_key: primary
-          spec:
-            client: "1"
-            dependencies:
-              - kafka-python>=2.0.0
-              - pydantic>=2.7.0
-              - fastapi>=0.115.0
-              - requests>=2.32.0
-              - pyyaml>=6.0.1
-              - numpy>=1.26.0
-              - databricks-sdk>=0.30.0
-              - python-dotenv>=1.0.0
+        - task_key: build_semantic
+          description: "Create semantic SQL views for Databricks Genie AI"
+          depends_on:
+            - task_key: build_platinum
+          notebook_task:
+            notebook_path: ../notebooks/05_semantic_views.py
 
-      # Job-level parameters passed to all tasks
+      # Job-level parameters passed to all notebook tasks via dbutils.widgets
       parameters:
         - name: LAKEHOUSE_ENV
           default: "${var.lakehouse_env}"

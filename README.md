@@ -161,12 +161,18 @@ Or pass `API_BASE_URL=http://<YOUR_EC2_PUBLIC_IP>:8000` directly as an environme
 
 ---
 
-## 🤖 Databricks Workflow & Automation
+## 🤖 Databricks Workflow & Notebook-Based Orchestration
 
 - **Schedule:** Recurring **every 3 hours** (`quartz_cron_expression: "0 0 */3 * * ?"`).
-- **Orchestration:** 4-task sequential workflow (`ingest_bronze` → `transform_silver` → `build_gold` → `build_platinum`).
-- **Resilience:** 2x automatic task retries with backoff + email notifications on failure.
-- **Idempotency:** Gold & Platinum transformations use idempotent overwrites; re-running any job never creates duplicate records.
+- **Orchestration:** 5-task sequential notebook workflow (`ingest_bronze` → `transform_silver` → `build_gold` → `build_platinum` → `build_semantic`).
+- **Databricks Native Entrypoints:** Configured via `notebook_task` in `resources/workflows.yml`. Each task runs a thin Databricks notebook in `/notebooks/` (`01_ingest_bronze.py`, `02_silver_transform.py`, `03_build_gold.py`, `04_build_platinum.py`, `05_semantic_views.py`).
+- **Clean Parameter Handling:** Parameters (such as `LAKEHOUSE_ENV` and `API_BASE_URL`) are passed via `dbutils.widgets`, eliminating fragile environment-variable overrides across cluster nodes.
+- **Architectural Separation of Concerns (Deliberate Design):**
+  - **Core Transformation Logic:** Lives exclusively inside importable, unit-tested Python modules (`jobs/silver/dq_rules.py`, `jobs/gold/dim_*.py`, `ingestion/api_client.py`).
+  - **Databricks Notebooks:** Act purely as **thin, Databricks-native entrypoints** (reading widgets, invoking module functions, and logging execution status).
+  - **Why this design?** Keeping business logic in modules ensures that all 7 DQ rules and dimensional builders remain 100% testable locally via `pytest` without needing a live Databricks cluster for unit tests, while notebooks provide clean widget-driven execution inside Databricks Workflows.
+- **Resilience:** Automatic task retries with backoff + email notifications on failure.
+- **Idempotency:** Gold, Platinum, and Semantic transformations use idempotent writes; re-running any job never creates duplicate records.
 
 ---
 
