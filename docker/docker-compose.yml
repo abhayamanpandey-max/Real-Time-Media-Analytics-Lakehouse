@@ -7,6 +7,7 @@
 #
 # External Endpoints:
 #   Mock API:      http://<EC2_PUBLIC_IP>:8000/health
+#   Supervisor UI: http://<EC2_PUBLIC_IP>:8001
 #   Kafka UI:      http://<EC2_PUBLIC_IP>:8080
 #   Client AI UI:  http://<EC2_PUBLIC_IP>:8050
 
@@ -95,6 +96,28 @@ services:
       DATABRICKS_TOKEN: "${DATABRICKS_TOKEN}"
       GENIE_SPACE_ID: "01f1a1fd42bf12c9b418f72e196ce123"
 
+  supervisor:
+    build:
+      context: ..
+      dockerfile: supervisor/Dockerfile
+    container_name: lakehouse-supervisor
+    restart: always
+    ports:
+      - "0.0.0.0:8001:8001"
+    environment:
+      DATABRICKS_HOST: "https://dbc-aa73f553-354d.cloud.databricks.com"
+      DATABRICKS_TOKEN: "${DATABRICKS_TOKEN}"
+      GENIE_SPACE_ID_AUDIENCE: "${GENIE_SPACE_ID_AUDIENCE}"
+      GENIE_SPACE_ID_ENGAGEMENT: "${GENIE_SPACE_ID_ENGAGEMENT}"
+      GENIE_SPACE_ID_COMPOSITION: "${GENIE_SPACE_ID_COMPOSITION}"
+      GENIE_SPACE_ID_MONETIZATION: "${GENIE_SPACE_ID_MONETIZATION}"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: lakehouse-kafka-ui
@@ -112,3 +135,4 @@ services:
 volumes:
   kafka-data:
     driver: local
+
