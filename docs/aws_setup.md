@@ -46,6 +46,8 @@ Create a Security Group named `lakehouse-ingestion-sg` with the following inboun
 |------|----------|------------|--------|---------|
 | SSH | TCP | 22 | My IP (`x.x.x.x/32`) | Secure terminal access |
 | Custom TCP | TCP | 8000 | Anywhere (`0.0.0.0/0`) | Mock API accessible by Databricks |
+| Custom TCP | TCP | 8001 | Anywhere (`0.0.0.0/0`) | Supervisor Web UI & API |
+| Custom TCP | TCP | 8050 | Anywhere (`0.0.0.0/0`) | Client AI Portal UI |
 | Custom TCP | TCP | 8080 | My IP (`x.x.x.x/32`) | Kafka UI web dashboard |
 
 ---
