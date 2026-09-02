@@ -126,158 +126,118 @@ HTML_INTERFACE = """<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Genie Supervisor Agent Portal</title>
+    <title>Databricks Genie Multi-Agent Supervisor Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            background-color: #0f172a;
-            color: #f8fafc;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-        header {
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            border-bottom: 1px solid #334155;
-            padding: 1rem 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        header h1 { font-size: 1.25rem; font-weight: 600; color: #38bdf8; }
-        header p { font-size: 0.85rem; color: #94a3b8; }
-        main {
-            flex: 1;
-            overflow-y: auto;
-            padding: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-        .chat-message {
-            display: flex;
-            flex-direction: column;
-            gap: 0.4rem;
-            max-width: 800px;
-            animation: fadeIn 0.3s ease-in-out;
-        }
-        .chat-message.user { align-self: flex-end; }
-        .chat-message.agent { align-self: flex-start; }
-        .message-bubble {
-            padding: 1rem;
-            border-radius: 12px;
-            line-height: 1.5;
-            font-size: 0.95rem;
-        }
-        .user .message-bubble {
-            background-color: #2563eb;
-            color: #ffffff;
-            border-bottom-right-radius: 2px;
-        }
-        .agent .message-bubble {
-            background-color: #1e293b;
-            border: 1px solid #334155;
-            color: #f8fafc;
-            border-bottom-left-radius: 2px;
-            white-space: pre-wrap;
-        }
-        .domain-badge {
-            display: inline-block;
-            padding: 0.25rem 0.6rem;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 0.4rem;
-            align-self: flex-start;
-        }
-        .badge-audience_reach { background-color: #0284c7; color: #ffffff; }
-        .badge-engagement { background-color: #7c3aed; color: #ffffff; }
-        .badge-composition { background-color: #059669; color: #ffffff; }
-        .badge-monetization { background-color: #d97706; color: #ffffff; }
-        .error-bubble {
-            background-color: #7f1d1d;
-            border: 1px solid #b91c1c;
-            color: #fca5a5;
-        }
-        footer {
-            background-color: #1e293b;
-            border-top: 1px solid #334155;
-            padding: 1rem 1.5rem;
-        }
-        .input-form {
-            display: flex;
-            gap: 0.75rem;
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-        .input-form input {
-            flex: 1;
-            background-color: #0f172a;
-            border: 1px solid #334155;
-            color: #f8fafc;
-            padding: 0.75rem 1rem;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            outline: none;
-        }
-        .input-form input:focus { border-color: #38bdf8; }
-        .input-form button {
-            background-color: #0284c7;
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .input-form button:hover { background-color: #0369a1; }
-        .input-form button:disabled { background-color: #475569; cursor: not-allowed; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        body { background-color: #0f172a; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
     </style>
 </head>
-<body>
-    <header>
+<body class="flex flex-col h-screen overflow-hidden">
+    <!-- Top Navigation Header -->
+    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between shadow-lg">
         <div>
-            <h1>Databricks Genie Multi-Agent Supervisor</h1>
-            <p>Routes analytical questions to domain agents (Audience, Engagement, Composition, Monetization)</p>
+            <div class="flex items-center gap-3">
+                <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+                <h1 class="text-xl font-bold text-sky-400 tracking-tight">Databricks Genie Multi-Agent Supervisor</h1>
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5">Routes NL questions across 4 domain agents: Audience Reach, Engagement, Composition & Monetization</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="text-xs bg-sky-500/20 text-sky-400 border border-sky-500/30 px-3 py-1 rounded-full font-medium">EC2 Port 8001 Live</span>
         </div>
     </header>
 
-    <main id="chatHistory">
-        <div class="chat-message agent">
-            <div class="message-bubble">
-                👋 Hello! Ask any question about your media analytics lakehouse (e.g. audience reach, engagement trends, user demographics, or ad monetization). I will automatically route it to the appropriate Databricks Genie domain agent.
+    <!-- Main Container -->
+    <div class="flex-1 flex overflow-hidden">
+        <!-- Sidebar Domain Agents Overview -->
+        <aside class="w-72 bg-slate-900/50 border-r border-slate-800 p-4 flex flex-col gap-4 hidden md:flex">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">Domain Agents Overview</h2>
+            <div class="space-y-3">
+                <div class="p-3 rounded-xl border border-slate-800 bg-slate-900/80 hover:border-sky-500/30 transition-all">
+                    <div class="font-semibold text-sm text-sky-400 flex items-center gap-2">
+                        <span>📊</span> Audience & Reach
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1">Property rankings, viewer counts, audience share & trends.</p>
+                </div>
+                <div class="p-3 rounded-xl border border-slate-800 bg-slate-900/80 hover:border-purple-500/30 transition-all">
+                    <div class="font-semibold text-sm text-purple-400 flex items-center gap-2">
+                        <span>⏱️</span> Engagement
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1">Average watch time, session duration & video completion rates.</p>
+                </div>
+                <div class="p-3 rounded-xl border border-slate-800 bg-slate-900/80 hover:border-emerald-500/30 transition-all">
+                    <div class="font-semibold text-sm text-emerald-400 flex items-center gap-2">
+                        <span>📱</span> Composition
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1">Demographics, platforms, device split & audience overlap index.</p>
+                </div>
+                <div class="p-3 rounded-xl border border-slate-800 bg-slate-900/80 hover:border-amber-500/30 transition-all">
+                    <div class="font-semibold text-sm text-amber-400 flex items-center gap-2">
+                        <span>💰</span> Monetization
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1">Ad revenue, CPM yields, ARPU & fill rate analytics.</p>
+                </div>
             </div>
-        </div>
-    </main>
+        </aside>
 
-    <footer>
-        <form class="input-form" id="askForm" onsubmit="submitQuestion(event)">
-            <input type="text" id="questionInput" placeholder="Ask a question (e.g., Which property had the highest audience last month?)" required />
-            <button type="submit" id="sendBtn">Send</button>
-        </form>
-    </footer>
+        <!-- Chat Workspace -->
+        <main class="flex-1 flex flex-col bg-slate-950 p-6 overflow-hidden">
+            <!-- Quick Suggestion Chips -->
+            <div class="flex flex-wrap gap-2 mb-4">
+                <button onclick="setQuestion('Which property had the highest total audience in the most recent monthly period?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-lg transition-colors">
+                    💡 Highest Audience Property
+                </button>
+                <button onclick="setQuestion('What is the average watch time per session on mobile?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-lg transition-colors">
+                    💡 Watch Time Trends
+                </button>
+                <button onclick="setQuestion('What is the audience profile breakdown by platform for property XYZ?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-lg transition-colors">
+                    💡 Platform Breakdown
+                </button>
+                <button onclick="setQuestion('What is the total ad revenue generated across all properties this quarter?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-lg transition-colors">
+                    💡 Ad Revenue & CPM
+                </button>
+            </div>
+
+            <!-- Messages History -->
+            <div id="chatHistory" class="flex-1 overflow-y-auto space-y-4 pr-2">
+                <div class="flex flex-col items-start max-w-2xl">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl rounded-tl-sm p-4 text-sm leading-relaxed text-slate-200">
+                        👋 Welcome to the **Databricks Genie Multi-Agent Supervisor** portal! Type any question below. I will inspect your query, determine the domain, route to the target Genie Agent, and query Databricks via Managed MCP.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Bar -->
+            <form id="askForm" onsubmit="submitQuestion(event)" class="mt-4 flex gap-3">
+                <input type="text" id="questionInput" placeholder="Ask a question (e.g. Which property had the highest audience last month?)" class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors" required />
+                <button type="submit" id="sendBtn" class="bg-sky-600 hover:bg-sky-500 text-white font-semibold text-sm px-6 py-3 rounded-xl transition-all shadow-lg shadow-sky-600/20">
+                    Send Question
+                </button>
+            </form>
+        </main>
+    </div>
 
     <script>
         const questionInput = document.getElementById('questionInput');
         const chatHistory = document.getElementById('chatHistory');
         const sendBtn = document.getElementById('sendBtn');
 
+        function setQuestion(q) {
+            questionInput.value = q;
+            questionInput.focus();
+        }
+
         async function submitQuestion(event) {
             event.preventDefault();
             const question = questionInput.value.trim();
             if (!question) return;
 
-            // Render user question
-            appendMessage('user', question);
+            // Render User Message
+            appendUserMessage(question);
             questionInput.value = '';
             sendBtn.disabled = true;
 
-            // Render loading message
+            // Render Loading Message
             const loadingId = appendLoading();
 
             try {
@@ -291,7 +251,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
 
                 if (!response.ok) {
                     const errData = await response.json().catch(() => ({ detail: response.statusText }));
-                    appendError(`Error (${response.status}): ${errData.detail || 'Failed to fetch answer'}`);
+                    appendError(`Error (${response.status}): ${errData.detail || 'Failed to query agent'}`);
                 } else {
                     const data = await response.json();
                     appendAgentResponse(data.domain, data.answer);
@@ -305,43 +265,41 @@ HTML_INTERFACE = """<!DOCTYPE html>
             }
         }
 
-        function appendMessage(sender, text) {
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `chat-message ${sender}`;
-            msgDiv.innerHTML = `<div class="message-bubble">${escapeHtml(text)}</div>`;
-            chatHistory.appendChild(msgDiv);
+        function appendUserMessage(text) {
+            const div = document.createElement('div');
+            div.className = 'flex flex-col items-end';
+            div.innerHTML = `<div class="bg-sky-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 text-sm max-w-xl shadow-md">${escapeHtml(text)}</div>`;
+            chatHistory.appendChild(div);
             chatHistory.scrollTop = chatHistory.scrollHeight;
         }
 
         function appendAgentResponse(domain, answer) {
-            const msgDiv = document.createElement('div');
-            msgDiv.className = 'chat-message agent';
-            const badgeClass = `badge-${domain}` || 'badge-audience_reach';
-            const domainTitle = (domain || 'UNKNOWN').replace('_', ' ').toUpperCase();
-            
-            msgDiv.innerHTML = `
-                <span class="domain-badge ${badgeClass}">Routed to: ${domainTitle}</span>
-                <div class="message-bubble">${escapeHtml(answer)}</div>
+            const div = document.createElement('div');
+            div.className = 'flex flex-col items-start max-w-3xl';
+            const badge = getDomainBadge(domain);
+            div.innerHTML = `
+                <div class="mb-1">${badge}</div>
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl rounded-tl-sm p-4 text-sm leading-relaxed text-slate-200 whitespace-pre-wrap shadow-md">${escapeHtml(answer)}</div>
             `;
-            chatHistory.appendChild(msgDiv);
+            chatHistory.appendChild(div);
             chatHistory.scrollTop = chatHistory.scrollHeight;
         }
 
         function appendError(errorText) {
-            const msgDiv = document.createElement('div');
-            msgDiv.className = 'chat-message agent';
-            msgDiv.innerHTML = `<div class="message-bubble error-bubble">⚠️ ${escapeHtml(errorText)}</div>`;
-            chatHistory.appendChild(msgDiv);
+            const div = document.createElement('div');
+            div.className = 'flex flex-col items-start max-w-2xl';
+            div.innerHTML = `<div class="bg-red-950/80 border border-red-800 text-red-300 rounded-2xl rounded-tl-sm p-4 text-sm shadow-md">⚠️ ${escapeHtml(errorText)}</div>`;
+            chatHistory.appendChild(div);
             chatHistory.scrollTop = chatHistory.scrollHeight;
         }
 
         function appendLoading() {
             const id = 'loading-' + Date.now();
-            const msgDiv = document.createElement('div');
-            msgDiv.id = id;
-            msgDiv.className = 'chat-message agent';
-            msgDiv.innerHTML = `<div class="message-bubble">⏳ Routing question to domain agent & querying Databricks Genie via MCP...</div>`;
-            chatHistory.appendChild(msgDiv);
+            const div = document.createElement('div');
+            div.id = id;
+            div.className = 'flex flex-col items-start max-w-xl';
+            div.innerHTML = `<div class="bg-slate-900 border border-slate-800 rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-slate-400 italic flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-sky-400 animate-ping"></span> Routing question to domain agent & querying Databricks Genie via MCP...</div>`;
+            chatHistory.appendChild(div);
             chatHistory.scrollTop = chatHistory.scrollHeight;
             return id;
         }
@@ -351,13 +309,16 @@ HTML_INTERFACE = """<!DOCTYPE html>
             if (el) el.remove();
         }
 
+        function getDomainBadge(domain) {
+            const d = (domain || 'audience_reach').toLowerCase();
+            if (d.includes('monetization')) return '<span class="inline-block bg-amber-500/20 text-amber-400 border border-amber-500/30 font-bold text-[10px] tracking-wider uppercase px-2.5 py-1 rounded-full">Routed to: Monetization</span>';
+            if (d.includes('composition')) return '<span class="inline-block bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold text-[10px] tracking-wider uppercase px-2.5 py-1 rounded-full">Routed to: Composition</span>';
+            if (d.includes('engagement')) return '<span class="inline-block bg-purple-500/20 text-purple-400 border border-purple-500/30 font-bold text-[10px] tracking-wider uppercase px-2.5 py-1 rounded-full">Routed to: Engagement</span>';
+            return '<span class="inline-block bg-sky-500/20 text-sky-400 border border-sky-500/30 font-bold text-[10px] tracking-wider uppercase px-2.5 py-1 rounded-full">Routed to: Audience & Reach</span>';
+        }
+
         function escapeHtml(str) {
-            return str
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
         }
     </script>
 </body>
