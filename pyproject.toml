@@ -37,7 +37,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["config", "generator", "mock_api", "ingestion", "jobs", "validation"]
+packages = ["config", "generator", "mock_api", "ingestion", "jobs", "validation", "supervisor"]
 
 [build-system]
 requires = ["hatchling"]
