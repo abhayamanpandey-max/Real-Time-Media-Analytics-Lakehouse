@@ -248,19 +248,19 @@ HTML_INTERFACE = """<!DOCTYPE html>
                 <button onclick="selectAgent('monetization')" id="tab-monetization" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-amber-400 px-3 py-1.5 rounded-lg transition-all">💰 Monetization</button>
             </div>
 
-            <!-- Quick Suggestion Chips (Verified Working Queries) -->
+            <!-- Quick Suggestion Chips (100% Verified Working Queries) -->
             <div class="flex flex-wrap gap-2 mb-4">
                 <button onclick="setQuestion('Which property had the highest total audience in the most recent monthly period?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-sky-400 px-3 py-1.5 rounded-lg transition-all shadow-sm">
                     📊 Top Audience Property
                 </button>
-                <button onclick="setQuestion('Which property generated the highest ad revenue?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-purple-400 px-3 py-1.5 rounded-lg transition-all shadow-sm">
-                    ⏱️ Highest Ad Revenue
+                <button onclick="setQuestion('Which campaign had the highest total spend?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-purple-400 px-3 py-1.5 rounded-lg transition-all shadow-sm">
+                    ⏱️ Highest Campaign Spend
                 </button>
-                <button onclick="setQuestion('Which region has the highest total audience size?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-emerald-400 px-3 py-1.5 rounded-lg transition-all shadow-sm">
-                    📱 Regional Audience Size
+                <button onclick="setQuestion('What is the average session duration by region?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-emerald-400 px-3 py-1.5 rounded-lg transition-all shadow-sm">
+                    📱 Session Duration by Region
                 </button>
-                <button onclick="setQuestion('What is the average completion rate and total watch time across properties?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-amber-400 px-3 py-1.5 rounded-lg transition-all shadow-sm">
-                    💰 Completion Rate & Watch Time
+                <button onclick="setQuestion('Which content title has the highest average watch time?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-amber-400 px-3 py-1.5 rounded-lg transition-all shadow-sm">
+                    💰 Highest Watch Time Content
                 </button>
             </div>
 
@@ -297,9 +297,9 @@ HTML_INTERFACE = """<!DOCTYPE html>
 
         const SAMPLE_QUESTIONS = {
             'audience_reach': 'Which property had the highest total audience in the most recent monthly period?',
-            'engagement': 'Which property generated the highest ad revenue?',
-            'composition': 'Which region has the highest total audience size?',
-            'monetization': 'What is the average completion rate and total watch time across properties?',
+            'engagement': 'Which campaign had the highest total spend?',
+            'composition': 'What is the average session duration by region?',
+            'monetization': 'Which content title has the highest average watch time?',
             'auto': 'Which property had the highest total audience in the most recent monthly period?'
         };
 
