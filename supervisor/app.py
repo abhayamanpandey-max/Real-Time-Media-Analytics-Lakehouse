@@ -11,7 +11,7 @@ Exposes:
 
 import logging
 import os
-from typing import Dict
+from typing import Dict, Optional
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
@@ -33,39 +33,45 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Configuration from environment with robust defaults
-DATABRICKS_HOST = os.getenv("DATABRICKS_HOST", "dbc-aa73f553-354d.cloud.databricks.com").strip()
-DATABRICKS_TOKEN = os.getenv("DATABRICKS_TOKEN", "").strip()
+# Configuration from environment with fallback defaults
+DATABRICKS_HOST = (
+    os.getenv("DATABRICKS_HOST")
+    or "dbc-aa73f553-354d.cloud.databricks.com"
+).strip()
 
-DEFAULT_SPACE_ID = os.getenv("GENIE_SPACE_ID", "01f1a1fd42bf12c9b418f72e196ce123").strip()
+DATABRICKS_TOKEN = (
+    os.getenv("DATABRICKS_TOKEN")
+    or "4fb61313f73ef71f3cf8b18a26bb952facaf71ca6c1693d9787a6ee0e30fe4ae"
+).strip()
 
-# Genie Space IDs mapping per domain
+DEFAULT_SPACE_ID = "01f1a1fd42bf12c9b418f72e196ce123"
+
+# Genie Space IDs mapping per domain with fallback defaults
 GENIE_SPACE_IDS: Dict[str, str] = {
     "audience_reach": (
         os.getenv("GENIE_SPACE_ID_AUDIENCE_REACH")
         or os.getenv("GENIE_SPACE_ID_AUDIENCE")
-        or DEFAULT_SPACE_ID
+        or os.getenv("GENIE_SPACE_ID")
+        or "01f1a1fd42bf12c9b418f72e196ce123"
     ).strip(),
     "engagement": (
         os.getenv("GENIE_SPACE_ID_ENGAGEMENT")
-        or os.getenv("GENIE_SPACE_ID_AUDIENCE")
-        or DEFAULT_SPACE_ID
+        or "01f1a6065b871342b326e101c2469fb2"
     ).strip(),
     "composition": (
         os.getenv("GENIE_SPACE_ID_COMPOSITION")
-        or os.getenv("GENIE_SPACE_ID_AUDIENCE")
-        or DEFAULT_SPACE_ID
+        or "01f1a6061e7110a69b5c9b4d3ccc16b4"
     ).strip(),
     "monetization": (
         os.getenv("GENIE_SPACE_ID_MONETIZATION")
-        or os.getenv("GENIE_SPACE_ID_AUDIENCE")
-        or DEFAULT_SPACE_ID
+        or "01f1a605b30a1a06ae28b8f2fc484f56"
     ).strip(),
 }
 
 
 class AskRequest(BaseModel):
     question: str
+    domain: Optional[str] = None
 
 
 class AskResponse(BaseModel):
@@ -88,9 +94,13 @@ async def ask_endpoint(request: AskRequest):
     if not question:
         raise HTTPException(status_code=400, detail="Question field cannot be empty.")
 
-    # 1. Route question to domain
-    domain = route_question(question)
-    logger.info(f"Routed question '{question}' to domain: '{domain}'")
+    # 1. Route question to domain (or use target domain if explicitly passed)
+    if request.domain and request.domain in GENIE_SPACE_IDS:
+        domain = request.domain
+        logger.info(f"Using explicitly selected domain: '{domain}'")
+    else:
+        domain = route_question(question)
+        logger.info(f"Routed question '{question}' to domain: '{domain}'")
 
     # 2. Get space ID for domain with fallback
     space_id = (
@@ -99,18 +109,16 @@ async def ask_endpoint(request: AskRequest):
         or DEFAULT_SPACE_ID
     )
 
-    if not DATABRICKS_HOST or not DATABRICKS_TOKEN:
-        error_msg = "DATABRICKS_HOST or DATABRICKS_TOKEN env vars are missing on supervisor service."
-        logger.error(error_msg)
-        raise HTTPException(status_code=500, detail=error_msg)
+    host_url = DATABRICKS_HOST if DATABRICKS_HOST else "dbc-aa73f553-354d.cloud.databricks.com"
+    token_str = DATABRICKS_TOKEN if DATABRICKS_TOKEN else "4fb61313f73ef71f3cf8b18a26bb952facaf71ca6c1693d9787a6ee0e30fe4ae"
 
     # 3. Call Databricks Genie MCP endpoint
     try:
         answer = await ask_genie(
             space_id=space_id,
             question=question,
-            host=DATABRICKS_HOST,
-            token=DATABRICKS_TOKEN,
+            host=host_url,
+            token=token_str,
         )
         return AskResponse(domain=domain, answer=answer)
     except Exception as exc:
@@ -128,13 +136,19 @@ HTML_INTERFACE = """<!DOCTYPE html>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Databricks Genie Multi-Agent Supervisor Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         body { background-color: #0f172a; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
+        .markdown-body strong { color: #38bdf8; font-weight: 700; }
+        .markdown-body p { margin-bottom: 0.5rem; }
+        .markdown-body ul { list-style-type: disc; margin-left: 1.25rem; margin-bottom: 0.5rem; }
+        .markdown-body ol { list-style-type: decimal; margin-left: 1.25rem; margin-bottom: 0.5rem; }
+        .markdown-body code { background-color: #1e293b; color: #f43f5e; padding: 0.1rem 0.3rem; border-radius: 4px; font-size: 0.85em; }
     </style>
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
     <!-- Top Navigation Header -->
-    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between shadow-lg">
+    <header class="bg-slate-900 border-b border-slate-800 px-6 py-3.5 flex items-center justify-between shadow-lg">
         <div>
             <div class="flex items-center gap-3">
                 <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -143,66 +157,89 @@ HTML_INTERFACE = """<!DOCTYPE html>
             <p class="text-xs text-slate-400 mt-0.5">Routes NL questions across 4 domain agents: Audience Reach, Engagement, Composition & Monetization</p>
         </div>
         <div class="flex items-center gap-2">
-            <span class="text-xs bg-sky-500/20 text-sky-400 border border-sky-500/30 px-3 py-1 rounded-full font-medium">EC2 Port 8001 Live</span>
+            <span class="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full font-medium flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span> 4 Managed MCP Agents Online
+            </span>
         </div>
     </header>
 
     <!-- Main Container -->
     <div class="flex-1 flex overflow-hidden">
-        <!-- Sidebar Domain Agents Overview -->
-        <aside class="w-72 bg-slate-900/50 border-r border-slate-800 p-4 flex flex-col gap-4 hidden md:flex">
-            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">Domain Agents Overview</h2>
-            <div class="space-y-3">
-                <div class="p-3 rounded-xl border border-slate-800 bg-slate-900/80 hover:border-sky-500/30 transition-all">
-                    <div class="font-semibold text-sm text-sky-400 flex items-center gap-2">
-                        <span>📊</span> Audience & Reach
+        <!-- Sidebar Domain Agents Overview (Interactive Clickable Cards) -->
+        <aside class="w-80 bg-slate-900/60 border-r border-slate-800 p-4 flex flex-col gap-4 hidden lg:flex">
+            <div class="flex items-center justify-between">
+                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">Domain Agents (Click to Target)</h2>
+                <button onclick="selectAgent('auto')" id="autoBtn" class="text-[10px] bg-sky-600 text-white font-semibold px-2 py-0.5 rounded transition-all">Auto-Route</button>
+            </div>
+            <div class="space-y-2.5">
+                <!-- Agent Card 1: Audience & Reach -->
+                <div onclick="selectAgent('audience_reach')" id="card-audience_reach" class="agent-card p-3 rounded-xl border border-sky-500/40 bg-slate-900/90 cursor-pointer hover:border-sky-400 transition-all shadow-md">
+                    <div class="flex items-center justify-between">
+                        <div class="font-semibold text-sm text-sky-400 flex items-center gap-2">
+                            <span>📊</span> Audience & Reach
+                        </div>
+                        <span id="badge-audience_reach" class="text-[9px] bg-sky-500/20 text-sky-300 px-1.5 py-0.5 rounded font-bold uppercase">Active</span>
                     </div>
                     <p class="text-xs text-slate-400 mt-1">Property rankings, viewer counts, audience share & trends.</p>
+                    <div class="text-[10px] font-mono text-slate-500 mt-2">Space ID: 01f1a1fd42bf12...</div>
                 </div>
-                <div class="p-3 rounded-xl border border-slate-800 bg-slate-900/80 hover:border-purple-500/30 transition-all">
-                    <div class="font-semibold text-sm text-purple-400 flex items-center gap-2">
-                        <span>⏱️</span> Engagement
+
+                <!-- Agent Card 2: Engagement -->
+                <div onclick="selectAgent('engagement')" id="card-engagement" class="agent-card p-3 rounded-xl border border-slate-800 bg-slate-900/40 cursor-pointer hover:border-purple-400 transition-all">
+                    <div class="flex items-center justify-between">
+                        <div class="font-semibold text-sm text-purple-400 flex items-center gap-2">
+                            <span>⏱️</span> Engagement
+                        </div>
+                        <span id="badge-engagement" class="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-bold uppercase">Standby</span>
                     </div>
-                    <p class="text-xs text-slate-400 mt-1">Average watch time, session duration & video completion rates.</p>
+                    <p class="text-xs text-slate-400 mt-1">Average watch time, session duration & completion rates.</p>
+                    <div class="text-[10px] font-mono text-slate-500 mt-2">Space ID: 01f1a6061e7110...</div>
                 </div>
-                <div class="p-3 rounded-xl border border-slate-800 bg-slate-900/80 hover:border-emerald-500/30 transition-all">
-                    <div class="font-semibold text-sm text-emerald-400 flex items-center gap-2">
-                        <span>📱</span> Composition
+
+                <!-- Agent Card 3: Composition -->
+                <div onclick="selectAgent('composition')" id="card-composition" class="agent-card p-3 rounded-xl border border-slate-800 bg-slate-900/40 cursor-pointer hover:border-emerald-400 transition-all">
+                    <div class="flex items-center justify-between">
+                        <div class="font-semibold text-sm text-emerald-400 flex items-center gap-2">
+                            <span>📱</span> Composition
+                        </div>
+                        <span id="badge-composition" class="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-bold uppercase">Standby</span>
                     </div>
-                    <p class="text-xs text-slate-400 mt-1">Demographics, platforms, device split & audience overlap index.</p>
+                    <p class="text-xs text-slate-400 mt-1">Demographics, platforms, device split & overlap index.</p>
+                    <div class="text-[10px] font-mono text-slate-500 mt-2">Space ID: 01f1a605b30a1a...</div>
                 </div>
-                <div class="p-3 rounded-xl border border-slate-800 bg-slate-900/80 hover:border-amber-500/30 transition-all">
-                    <div class="font-semibold text-sm text-amber-400 flex items-center gap-2">
-                        <span>💰</span> Monetization
+
+                <!-- Agent Card 4: Monetization -->
+                <div onclick="selectAgent('monetization')" id="card-monetization" class="agent-card p-3 rounded-xl border border-slate-800 bg-slate-900/40 cursor-pointer hover:border-amber-400 transition-all">
+                    <div class="flex items-center justify-between">
+                        <div class="font-semibold text-sm text-amber-400 flex items-center gap-2">
+                            <span>💰</span> Monetization
+                        </div>
+                        <span id="badge-monetization" class="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-bold uppercase">Standby</span>
                     </div>
                     <p class="text-xs text-slate-400 mt-1">Ad revenue, CPM yields, ARPU & fill rate analytics.</p>
+                    <div class="text-[10px] font-mono text-slate-500 mt-2">Space ID: 01f1a6065b8713...</div>
                 </div>
             </div>
         </aside>
 
         <!-- Chat Workspace -->
         <main class="flex-1 flex flex-col bg-slate-950 p-6 overflow-hidden">
-            <!-- Quick Suggestion Chips -->
-            <div class="flex flex-wrap gap-2 mb-4">
-                <button onclick="setQuestion('Which property had the highest total audience in the most recent monthly period?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-lg transition-colors">
-                    💡 Highest Audience Property
-                </button>
-                <button onclick="setQuestion('What is the average watch time per session on mobile?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-lg transition-colors">
-                    💡 Watch Time Trends
-                </button>
-                <button onclick="setQuestion('What is the audience profile breakdown by platform for property XYZ?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-lg transition-colors">
-                    💡 Platform Breakdown
-                </button>
-                <button onclick="setQuestion('What is the total ad revenue generated across all properties this quarter?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-lg transition-colors">
-                    💡 Ad Revenue & CPM
-                </button>
+            <!-- Domain Selection Tabs -->
+            <div class="flex flex-wrap items-center gap-2 mb-4">
+                <span class="text-xs font-semibold text-slate-400 mr-1">Agent Mode:</span>
+                <button onclick="selectAgent('auto')" id="tab-auto" class="text-xs bg-sky-600 text-white font-medium px-3 py-1.5 rounded-lg transition-all">⚡ Auto-Route</button>
+                <button onclick="selectAgent('audience_reach')" id="tab-audience_reach" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-sky-400 px-3 py-1.5 rounded-lg transition-all">📊 Audience & Reach</button>
+                <button onclick="selectAgent('engagement')" id="tab-engagement" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-purple-400 px-3 py-1.5 rounded-lg transition-all">⏱️ Engagement</button>
+                <button onclick="selectAgent('composition')" id="tab-composition" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-emerald-400 px-3 py-1.5 rounded-lg transition-all">📱 Composition</button>
+                <button onclick="selectAgent('monetization')" id="tab-monetization" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-amber-400 px-3 py-1.5 rounded-lg transition-all">💰 Monetization</button>
             </div>
 
             <!-- Messages History -->
             <div id="chatHistory" class="flex-1 overflow-y-auto space-y-4 pr-2">
                 <div class="flex flex-col items-start max-w-2xl">
-                    <div class="bg-slate-900 border border-slate-800 rounded-2xl rounded-tl-sm p-4 text-sm leading-relaxed text-slate-200">
-                        👋 Welcome to the **Databricks Genie Multi-Agent Supervisor** portal! Type any question below. I will inspect your query, determine the domain, route to the target Genie Agent, and query Databricks via Managed MCP.
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl rounded-tl-sm p-4 text-sm leading-relaxed text-slate-200 shadow-md">
+                        👋 Welcome to the **Databricks Genie Multi-Agent Supervisor** portal!<br/><br/>
+                        Select an agent card on the left or type your question below. The supervisor automatically routes questions to the corresponding Databricks Managed MCP Genie Agent!
                     </div>
                 </div>
             </div>
@@ -210,21 +247,62 @@ HTML_INTERFACE = """<!DOCTYPE html>
             <!-- Input Bar -->
             <form id="askForm" onsubmit="submitQuestion(event)" class="mt-4 flex gap-3">
                 <input type="text" id="questionInput" placeholder="Ask a question (e.g. Which property had the highest audience last month?)" class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors" required />
-                <button type="submit" id="sendBtn" class="bg-sky-600 hover:bg-sky-500 text-white font-semibold text-sm px-6 py-3 rounded-xl transition-all shadow-lg shadow-sky-600/20">
-                    Send Question
+                <button type="submit" id="sendBtn" class="bg-sky-600 hover:bg-sky-500 text-white font-semibold text-sm px-6 py-3 rounded-xl transition-all shadow-lg shadow-sky-600/20 flex items-center gap-2">
+                    <span>Send Question</span>
                 </button>
             </form>
         </main>
     </div>
 
     <script>
+        let selectedDomain = 'auto';
         const questionInput = document.getElementById('questionInput');
         const chatHistory = document.getElementById('chatHistory');
         const sendBtn = document.getElementById('sendBtn');
 
-        function setQuestion(q) {
-            questionInput.value = q;
-            questionInput.focus();
+        const SAMPLE_QUESTIONS = {
+            'audience_reach': 'Which property had the highest total audience in the most recent monthly period?',
+            'engagement': 'What is the average watch time per session on mobile?',
+            'composition': 'What is the audience profile breakdown by platform for property XYZ?',
+            'monetization': 'What is the total ad revenue generated across all properties this quarter?',
+            'auto': 'Which property had the highest total audience last month?'
+        };
+
+        function selectAgent(domain) {
+            selectedDomain = domain;
+            
+            // Update Card Highlights
+            const domains = ['audience_reach', 'engagement', 'composition', 'monetization'];
+            domains.forEach(d => {
+                const card = document.getElementById('card-' + d);
+                const badge = document.getElementById('badge-' + d);
+                const tab = document.getElementById('tab-' + d);
+                
+                if (d === domain) {
+                    if (card) { card.className = 'agent-card p-3 rounded-xl border border-sky-400 bg-slate-900/90 shadow-lg ring-1 ring-sky-400/50 cursor-pointer transition-all'; }
+                    if (badge) { badge.className = 'text-[9px] bg-sky-500 text-white px-1.5 py-0.5 rounded font-bold uppercase'; badge.innerText = 'TARGETED'; }
+                    if (tab) { tab.className = 'text-xs bg-sky-600 text-white font-semibold px-3 py-1.5 rounded-lg transition-all shadow'; }
+                } else {
+                    if (card) { card.className = 'agent-card p-3 rounded-xl border border-slate-800 bg-slate-900/40 cursor-pointer hover:border-slate-700 transition-all'; }
+                    if (badge) { badge.className = 'text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-bold uppercase'; badge.innerText = 'STANDBY'; }
+                    if (tab) { tab.className = 'text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 px-3 py-1.5 rounded-lg transition-all'; }
+                }
+            });
+
+            const autoBtn = document.getElementById('autoBtn');
+            const tabAuto = document.getElementById('tab-auto');
+            if (domain === 'auto') {
+                if (autoBtn) autoBtn.className = 'text-[10px] bg-sky-600 text-white font-semibold px-2 py-0.5 rounded shadow';
+                if (tabAuto) tabAuto.className = 'text-xs bg-sky-600 text-white font-semibold px-3 py-1.5 rounded-lg transition-all shadow';
+            } else {
+                if (autoBtn) autoBtn.className = 'text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded hover:text-white';
+                if (tabAuto) tabAuto.className = 'text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 px-3 py-1.5 rounded-lg transition-all';
+            }
+
+            if (SAMPLE_QUESTIONS[domain]) {
+                questionInput.value = SAMPLE_QUESTIONS[domain];
+                questionInput.focus();
+            }
         }
 
         async function submitQuestion(event) {
@@ -232,19 +310,22 @@ HTML_INTERFACE = """<!DOCTYPE html>
             const question = questionInput.value.trim();
             if (!question) return;
 
-            // Render User Message
             appendUserMessage(question);
             questionInput.value = '';
             sendBtn.disabled = true;
 
-            // Render Loading Message
             const loadingId = appendLoading();
 
             try {
+                const payload = { question: question };
+                if (selectedDomain !== 'auto') {
+                    payload.domain = selectedDomain;
+                }
+
                 const response = await fetch('/ask', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ question: question })
+                    body: JSON.stringify(payload)
                 });
 
                 removeMessage(loadingId);
@@ -268,18 +349,27 @@ HTML_INTERFACE = """<!DOCTYPE html>
         function appendUserMessage(text) {
             const div = document.createElement('div');
             div.className = 'flex flex-col items-end';
-            div.innerHTML = `<div class="bg-sky-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 text-sm max-w-xl shadow-md">${escapeHtml(text)}</div>`;
+            div.innerHTML = `<div class="bg-sky-600 text-white font-medium rounded-2xl rounded-tr-sm px-4 py-3 text-sm max-w-xl shadow-md">${escapeHtml(text)}</div>`;
             chatHistory.appendChild(div);
             chatHistory.scrollTop = chatHistory.scrollHeight;
         }
 
-        function appendAgentResponse(domain, answer) {
+        function appendAgentResponse(domain, rawAnswer) {
             const div = document.createElement('div');
             div.className = 'flex flex-col items-start max-w-3xl';
             const badge = getDomainBadge(domain);
+            
+            // Format Markdown properly using marked library if available, else format basic bold/bullets
+            let formattedHtml = '';
+            if (typeof marked !== 'undefined') {
+                formattedHtml = marked.parse(rawAnswer);
+            } else {
+                formattedHtml = escapeHtml(rawAnswer).replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>').replace(/\\n/g, '<br/>');
+            }
+
             div.innerHTML = `
                 <div class="mb-1">${badge}</div>
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl rounded-tl-sm p-4 text-sm leading-relaxed text-slate-200 whitespace-pre-wrap shadow-md">${escapeHtml(answer)}</div>
+                <div class="markdown-body bg-slate-900 border border-slate-800 rounded-2xl rounded-tl-sm p-4 text-sm leading-relaxed text-slate-200 shadow-md">${formattedHtml}</div>
             `;
             chatHistory.appendChild(div);
             chatHistory.scrollTop = chatHistory.scrollHeight;
@@ -298,7 +388,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
             const div = document.createElement('div');
             div.id = id;
             div.className = 'flex flex-col items-start max-w-xl';
-            div.innerHTML = `<div class="bg-slate-900 border border-slate-800 rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-slate-400 italic flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-sky-400 animate-ping"></span> Routing question to domain agent & querying Databricks Genie via MCP...</div>`;
+            div.innerHTML = `<div class="bg-slate-900 border border-slate-800 rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-slate-400 italic flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-sky-400 animate-ping"></span> Routing question to target Genie agent & querying Databricks via Managed MCP...</div>`;
             chatHistory.appendChild(div);
             chatHistory.scrollTop = chatHistory.scrollHeight;
             return id;
@@ -330,3 +420,4 @@ HTML_INTERFACE = """<!DOCTYPE html>
 def index():
     """Serves minimal single-page HTML chat interface."""
     return HTMLResponse(content=HTML_INTERFACE, status_code=200)
+
