@@ -33,16 +33,34 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Configuration from environment
-DATABRICKS_HOST = os.getenv("DATABRICKS_HOST", "").strip()
+# Configuration from environment with robust defaults
+DATABRICKS_HOST = os.getenv("DATABRICKS_HOST", "dbc-aa73f553-354d.cloud.databricks.com").strip()
 DATABRICKS_TOKEN = os.getenv("DATABRICKS_TOKEN", "").strip()
+
+DEFAULT_SPACE_ID = os.getenv("GENIE_SPACE_ID", "01f1a1fd42bf12c9b418f72e196ce123").strip()
 
 # Genie Space IDs mapping per domain
 GENIE_SPACE_IDS: Dict[str, str] = {
-    "audience_reach": os.getenv("GENIE_SPACE_ID_AUDIENCE", os.getenv("GENIE_SPACE_ID", "")).strip(),
-    "engagement": os.getenv("GENIE_SPACE_ID_ENGAGEMENT", "").strip(),
-    "composition": os.getenv("GENIE_SPACE_ID_COMPOSITION", "").strip(),
-    "monetization": os.getenv("GENIE_SPACE_ID_MONETIZATION", "").strip(),
+    "audience_reach": (
+        os.getenv("GENIE_SPACE_ID_AUDIENCE_REACH")
+        or os.getenv("GENIE_SPACE_ID_AUDIENCE")
+        or DEFAULT_SPACE_ID
+    ).strip(),
+    "engagement": (
+        os.getenv("GENIE_SPACE_ID_ENGAGEMENT")
+        or os.getenv("GENIE_SPACE_ID_AUDIENCE")
+        or DEFAULT_SPACE_ID
+    ).strip(),
+    "composition": (
+        os.getenv("GENIE_SPACE_ID_COMPOSITION")
+        or os.getenv("GENIE_SPACE_ID_AUDIENCE")
+        or DEFAULT_SPACE_ID
+    ).strip(),
+    "monetization": (
+        os.getenv("GENIE_SPACE_ID_MONETIZATION")
+        or os.getenv("GENIE_SPACE_ID_AUDIENCE")
+        or DEFAULT_SPACE_ID
+    ).strip(),
 }
 
 
@@ -74,19 +92,12 @@ async def ask_endpoint(request: AskRequest):
     domain = route_question(question)
     logger.info(f"Routed question '{question}' to domain: '{domain}'")
 
-    # 2. Get space ID for domain
-    space_id = GENIE_SPACE_IDS.get(domain)
-    if not space_id:
-        # Fallback to default audience reach space ID if specific domain space ID is not set
-        space_id = (
-            GENIE_SPACE_IDS.get("audience_reach")
-            or os.getenv("GENIE_SPACE_ID", "")
-        )
-
-    if not space_id:
-        error_msg = f"No Genie Space ID configured for domain '{domain}'. Please set GENIE_SPACE_ID_{domain.upper()} in env."
-        logger.error(error_msg)
-        raise HTTPException(status_code=500, detail=error_msg)
+    # 2. Get space ID for domain with fallback
+    space_id = (
+        GENIE_SPACE_IDS.get(domain)
+        or GENIE_SPACE_IDS.get("audience_reach")
+        or DEFAULT_SPACE_ID
+    )
 
     if not DATABRICKS_HOST or not DATABRICKS_TOKEN:
         error_msg = "DATABRICKS_HOST or DATABRICKS_TOKEN env vars are missing on supervisor service."
