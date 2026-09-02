@@ -160,18 +160,38 @@ async def _ask_genie_rest(space_id: str, question: str, clean_host: str, token: 
             status = poll_data.get("status")
             if status in ("COMPLETED", "EXECUTED"):
                 answer_parts = []
+                sql_part = ""
+
                 for att in poll_data.get("attachments", []):
-                    if isinstance(att, dict) and "text" in att:
-                        text_obj = att["text"]
-                        if isinstance(text_obj, dict) and "text" in text_obj:
-                            answer_parts.append(text_obj["text"])
-                        elif isinstance(text_obj, str):
-                            answer_parts.append(text_obj)
-                
-                if answer_parts:
-                    return "\n\n".join(answer_parts).strip()
-                
-                # Check for SQL or result summary
+                    if isinstance(att, dict):
+                        # Extract text answer content
+                        if "text" in att:
+                            text_obj = att["text"]
+                            if isinstance(text_obj, dict):
+                                content = text_obj.get("content") or text_obj.get("text")
+                                purpose = text_obj.get("purpose", "")
+                                if content and purpose == "TEXT_ATTACHMENT_PURPOSE_ANSWER":
+                                    answer_parts.insert(0, content)
+                                elif content and purpose != "FOLLOW_UP_QUESTION":
+                                    answer_parts.append(content)
+                            elif isinstance(text_obj, str):
+                                answer_parts.append(text_obj)
+
+                        # Extract generated SQL query
+                        if "query" in att:
+                            q_obj = att["query"]
+                            if isinstance(q_obj, dict) and "query" in q_obj:
+                                sql_part = f"```sql\n{q_obj['query'].strip()}\n```"
+
+                full_answer = "\n\n".join(answer_parts).strip()
+                if sql_part:
+                    if full_answer:
+                        return f"{full_answer}\n\n**Generated SQL Query:**\n{sql_part}"
+                    return f"**Generated SQL Query:**\n{sql_part}"
+
+                if full_answer:
+                    return full_answer
+
                 return f"Genie completed query for space '{space_id}'. Status: {status}."
             elif status in ("FAILED", "CANCELLED", "ERROR"):
                 raise RuntimeError(f"Genie space '{space_id}' query failed with status: {status}")
