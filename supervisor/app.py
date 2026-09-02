@@ -109,8 +109,17 @@ async def ask_endpoint(request: AskRequest):
         or DEFAULT_SPACE_ID
     )
 
-    host_url = DATABRICKS_HOST if DATABRICKS_HOST else "dbc-aa73f553-354d.cloud.databricks.com"
-    token_str = DATABRICKS_TOKEN if DATABRICKS_TOKEN else "4fb61313f73ef71f3cf8b18a26bb952facaf71ca6c1693d9787a6ee0e30fe4ae"
+    host_url = (
+        os.getenv("DATABRICKS_HOST")
+        or DATABRICKS_HOST
+        or "dbc-aa73f553-354d.cloud.databricks.com"
+    ).strip()
+    
+    token_str = (
+        os.getenv("DATABRICKS_TOKEN")
+        or DATABRICKS_TOKEN
+        or "4fb61313f73ef71f3cf8b18a26bb952facaf71ca6c1693d9787a6ee0e30fe4ae"
+    ).strip()
 
     # 3. Call Databricks Genie MCP endpoint
     try:
