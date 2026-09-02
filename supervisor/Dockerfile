@@ -1,4 +1,4 @@
-# Dockerfile for Multi-Agent Supervisor Service
+# Lightweight Dockerfile for Multi-Agent Supervisor Service
 FROM python:3.12-slim
 
 WORKDIR /app
@@ -9,8 +9,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf 
 # Copy project source
 COPY . /app
 
-# Install project and dependencies
-RUN pip install --no-cache-dir .
+# Install only supervisor dependencies (lightweight, avoids heavy databricks-connect/pyarrow wheels)
+RUN pip install --no-cache-dir fastapi uvicorn requests mcp httpx python-dotenv
 
 EXPOSE 8001
 
