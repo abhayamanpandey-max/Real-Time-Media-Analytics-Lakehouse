@@ -9,9 +9,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf 
 # Copy application source
 COPY . /app
 
-# Install dependencies and project cleanly
-RUN pip install --no-cache-dir fastapi uvicorn requests kafka-python pydantic pyyaml numpy python-dotenv python-pptx mcp httpx && \
-    pip install --no-cache-dir --no-deps .
+# Install runtime dependencies directly
+RUN pip install --no-cache-dir fastapi uvicorn requests kafka-python pydantic pyyaml numpy python-dotenv python-pptx mcp httpx
 
 EXPOSE 8000
 
