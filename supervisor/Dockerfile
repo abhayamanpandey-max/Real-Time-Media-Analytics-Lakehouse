@@ -1,16 +1,17 @@
-# Lightweight Dockerfile for Multi-Agent Supervisor Service
+# Robust Dockerfile for Multi-Agent Supervisor Service
 FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install curl for docker healthcheck
-RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+# Ensure /tmp has standard permissions for pip temporary files
+RUN mkdir -p /tmp && chmod 1777 /tmp && apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
-# Copy project source
-COPY . /app
-
-# Install only supervisor dependencies (lightweight, avoids heavy databricks-connect/pyarrow wheels)
+# Install runtime dependencies first (cached by Docker)
 RUN pip install --no-cache-dir fastapi uvicorn requests mcp httpx python-dotenv
+
+# Copy application source code
+COPY supervisor/ /app/supervisor/
+COPY config/ /app/config/
 
 EXPOSE 8001
 
