@@ -248,6 +248,22 @@ HTML_INTERFACE = """<!DOCTYPE html>
                 <button onclick="selectAgent('monetization')" id="tab-monetization" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-amber-400 px-3 py-1.5 rounded-lg transition-all">💰 Monetization</button>
             </div>
 
+            <!-- Quick Suggestion Chips (Verified Working Queries) -->
+            <div class="flex flex-wrap gap-2 mb-4">
+                <button onclick="setQuestion('Which property had the highest total audience in the most recent monthly period?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-sky-400 px-3 py-1.5 rounded-lg transition-all shadow-sm">
+                    📊 Top Audience Property
+                </button>
+                <button onclick="setQuestion('Which property generated the highest ad revenue?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-purple-400 px-3 py-1.5 rounded-lg transition-all shadow-sm">
+                    ⏱️ Highest Ad Revenue
+                </button>
+                <button onclick="setQuestion('Which region has the highest total audience size?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-emerald-400 px-3 py-1.5 rounded-lg transition-all shadow-sm">
+                    📱 Regional Audience Size
+                </button>
+                <button onclick="setQuestion('What is the average completion rate and total watch time across properties?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-amber-400 px-3 py-1.5 rounded-lg transition-all shadow-sm">
+                    💰 Completion Rate & Watch Time
+                </button>
+            </div>
+
             <!-- Messages History -->
             <div id="chatHistory" class="flex-1 overflow-y-auto space-y-4 pr-2">
                 <div class="flex flex-col items-start max-w-2xl">
@@ -274,12 +290,17 @@ HTML_INTERFACE = """<!DOCTYPE html>
         const chatHistory = document.getElementById('chatHistory');
         const sendBtn = document.getElementById('sendBtn');
 
+        function setQuestion(q) {
+            questionInput.value = q;
+            questionInput.focus();
+        }
+
         const SAMPLE_QUESTIONS = {
             'audience_reach': 'Which property had the highest total audience in the most recent monthly period?',
-            'engagement': 'What is the average watch time per session on mobile?',
-            'composition': 'What is the audience profile breakdown by platform for property XYZ?',
-            'monetization': 'What is the total ad revenue generated across all properties this quarter?',
-            'auto': 'Which property had the highest total audience last month?'
+            'engagement': 'Which property generated the highest ad revenue?',
+            'composition': 'Which region has the highest total audience size?',
+            'monetization': 'What is the average completion rate and total watch time across properties?',
+            'auto': 'Which property had the highest total audience in the most recent monthly period?'
         };
 
         function selectAgent(domain) {
