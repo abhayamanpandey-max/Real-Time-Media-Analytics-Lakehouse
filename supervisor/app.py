@@ -148,223 +148,437 @@ HTML_INTERFACE = """<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Media Analytics AI</title>
+    <title>Tenetic | Real-Time Media Intelligence & Live Telecast Analytics</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        body { background-color: #171717; color: #ececec; font-family: system-ui, -apple-system, sans-serif; }
-        .markdown-body strong { color: #ffffff; font-weight: 600; }
-        .markdown-body p { margin-bottom: 0.75rem; line-height: 1.625; }
-        .markdown-body ul { list-style-type: disc; margin-left: 1.25rem; margin-bottom: 0.75rem; }
-        .markdown-body ol { list-style-type: decimal; margin-left: 1.25rem; margin-bottom: 0.75rem; }
-        .markdown-body code { background-color: #262626; color: #f43f5e; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.85em; }
-        .markdown-body pre { background-color: #0a0a0a; border: 1px solid #262626; padding: 1rem; border-radius: 12px; overflow-x: auto; margin-top: 0.75rem; margin-bottom: 0.75rem; }
+        body { background-color: #f8fafc; color: #0f172a; font-family: system-ui, -apple-system, sans-serif; }
+        .markdown-body strong { color: #0369a1; font-weight: 600; }
+        .markdown-body p { margin-bottom: 0.5rem; line-height: 1.5; }
+        .markdown-body ul { list-style-type: disc; margin-left: 1.25rem; margin-bottom: 0.5rem; }
+        .markdown-body ol { list-style-type: decimal; margin-left: 1.25rem; margin-bottom: 0.5rem; }
+        .markdown-body code { background-color: #e2e8f0; color: #be123c; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.85em; }
+        .markdown-body pre { background-color: #0f172a; color: #f8fafc; padding: 0.75rem; border-radius: 8px; overflow-x: auto; margin-top: 0.5rem; margin-bottom: 0.5rem; }
         .markdown-body pre code { background: none; color: #38bdf8; padding: 0; }
     </style>
 </head>
-<body class="flex flex-col h-screen overflow-hidden">
-    <!-- Minimal Header (ChatGPT / Claude style) -->
-    <header class="h-14 border-b border-[#262626] px-6 flex items-center justify-between bg-[#171717] shrink-0">
-        <div class="flex items-center gap-2.5">
-            <div class="w-7 h-7 rounded-full bg-[#262626] flex items-center justify-center text-sky-400 font-bold text-sm border border-[#333333]">
-                ✦
+<body class="min-h-screen flex flex-col relative bg-slate-50 text-slate-900 selection:bg-sky-500 selection:text-white">
+
+    <!-- Official Corporate Light Navigation Header -->
+    <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center text-white font-black text-xl shadow-md shadow-sky-500/20">
+                ⚡
             </div>
-            <span class="text-sm font-semibold tracking-tight text-white">Media Analytics AI</span>
+            <div>
+                <span class="text-2xl font-black tracking-tight text-slate-900">TENETIC</span>
+                <span class="text-[10px] block font-mono text-sky-600 -mt-1 font-bold uppercase tracking-widest">Media Intelligence</span>
+            </div>
         </div>
-        <div class="flex items-center gap-2">
-            <span class="text-[11px] bg-[#262626] text-neutral-400 border border-[#333333] px-3 py-1 rounded-full font-medium flex items-center gap-2">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Connected to Lakehouse
-            </span>
+
+        <nav class="hidden md:flex items-center gap-8 text-xs font-semibold text-slate-600">
+            <a href="#about" class="hover:text-sky-600 transition-colors">About Us</a>
+            <a href="#telecasts" class="hover:text-sky-600 transition-colors">Live Telecasts & Coverage</a>
+            <a href="#solutions" class="hover:text-sky-600 transition-colors">Solutions</a>
+            <a href="#leadership" class="hover:text-sky-600 transition-colors">Leadership</a>
+            <a href="#technology" class="hover:text-sky-600 transition-colors">Lakehouse Tech</a>
+        </nav>
+
+        <div class="flex items-center gap-3">
+            <button onclick="toggleChat(true)" class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-md shadow-sky-600/20 transition-all flex items-center gap-2">
+                <span>✦ Live AI Portal</span>
+            </button>
         </div>
     </header>
 
-    <!-- Main Scrollable Chat Area -->
-    <main class="flex-1 overflow-y-auto flex flex-col items-center p-4">
-        <div id="chatFeed" class="w-full max-w-3xl flex-1 flex flex-col justify-between my-auto py-4">
-            
-            <!-- Welcome Screen (ChatGPT / Claude initial state) -->
-            <div id="welcomeScreen" class="my-auto flex flex-col items-center justify-center text-center px-4">
-                <div class="w-12 h-12 rounded-2xl bg-[#262626] border border-[#333333] flex items-center justify-center text-sky-400 font-bold text-xl mb-4 shadow-md">
-                    ✦
-                </div>
-                <h1 class="text-2xl font-semibold text-white tracking-tight mb-2">What would you like to analyze today?</h1>
-                <p class="text-sm text-neutral-400 max-w-md mb-8 leading-relaxed">Ask any question to query streaming audience metrics, campaign ad spend, regional trends, or content watch time.</p>
-                
-                <!-- Prompt Suggestion Cards (ChatGPT style) -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-xl text-left text-xs">
-                    <button onclick="setQuestion('Which property had the highest total audience in the most recent monthly period?')" class="p-4 bg-[#212121] hover:bg-[#262626] border border-[#2e2e2e] hover:border-[#404040] rounded-2xl transition-all flex flex-col gap-1 group">
-                        <span class="font-medium text-neutral-200 group-hover:text-white flex items-center gap-2">📊 Top Audience Property</span>
-                        <span class="text-[11px] text-neutral-400">Which property had the highest monthly audience?</span>
-                    </button>
+    <!-- Hero Section -->
+    <section id="about" class="px-6 py-20 max-w-6xl mx-auto text-center flex flex-col items-center">
+        <div class="inline-flex items-center gap-2 bg-sky-100 border border-sky-200 px-4 py-1.5 rounded-full text-xs text-sky-700 font-bold mb-6">
+            <span class="w-2 h-2 rounded-full bg-sky-600 animate-ping"></span> US-Based Real-Time Consumer Intelligence
+        </div>
+        
+        <h1 class="text-4xl sm:text-6xl font-black text-slate-900 tracking-tight max-w-4xl leading-tight">
+            Transforming US Live Telecasts into <span class="bg-gradient-to-r from-sky-600 via-indigo-600 to-blue-700 bg-clip-text text-transparent">Kinetic Intelligence</span>
+        </h1>
+        
+        <p class="text-base sm:text-lg text-slate-600 max-w-3xl mt-6 leading-relaxed">
+            Tenetic (derived from <em>Technology + Kinetic Energy</em>) is a US-based AI media intelligence company powering real-time consumer insights across live telecasts, broadcast networks, and local markets nationwide.
+        </p>
 
-                    <button onclick="setQuestion('Which campaign had the highest total spend?')" class="p-4 bg-[#212121] hover:bg-[#262626] border border-[#2e2e2e] hover:border-[#404040] rounded-2xl transition-all flex flex-col gap-1 group">
-                        <span class="font-medium text-neutral-200 group-hover:text-white flex items-center gap-2">⏱️ Highest Campaign Spend</span>
-                        <span class="text-[11px] text-neutral-400">Analyze campaign ad spend & metrics</span>
-                    </button>
+        <div class="flex flex-wrap items-center justify-center gap-4 mt-8">
+            <a href="#telecasts" class="bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs px-7 py-4 rounded-xl shadow-lg shadow-sky-600/20 transition-all">
+                View Live Telecast Coverage
+            </a>
+            <button onclick="toggleChat(true)" class="bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-bold text-xs px-7 py-4 rounded-xl shadow-sm transition-all">
+                ✦ Talk with Tenetic AI
+            </button>
+        </div>
 
-                    <button onclick="setQuestion('What is the average session duration by region?')" class="p-4 bg-[#212121] hover:bg-[#262626] border border-[#2e2e2e] hover:border-[#404040] rounded-2xl transition-all flex flex-col gap-1 group">
-                        <span class="font-medium text-neutral-200 group-hover:text-white flex items-center gap-2">📱 Regional Engagement</span>
-                        <span class="text-[11px] text-neutral-400">View session duration by country & region</span>
-                    </button>
+        <!-- Executive Stat Badges -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-5xl mt-16 text-left">
+            <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm">
+                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">US Market Coverage</div>
+                <div class="text-2xl font-black text-slate-900 mt-1">210 DMA Markets</div>
+                <div class="text-[11px] text-sky-600 mt-1 font-semibold">Local & National Live Telecasts</div>
+            </div>
+            <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm">
+                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Founding Vision</div>
+                <div class="text-2xl font-black text-slate-900 mt-1">Real-Time Insights</div>
+                <div class="text-[11px] text-emerald-600 mt-1 font-semibold">Replacing 30-Day Legacy Ratings</div>
+            </div>
+            <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm">
+                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Data Integration</div>
+                <div class="text-2xl font-black text-slate-900 mt-1">CivicScience Data</div>
+                <div class="text-[11px] text-purple-600 mt-1 font-semibold">Consumer Survey & Behavioral AI</div>
+            </div>
+            <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm">
+                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Lakehouse Architecture</div>
+                <div class="text-2xl font-black text-slate-900 mt-1">Delta Lake + MCP</div>
+                <div class="text-[11px] text-amber-600 mt-1 font-semibold">Databricks Genie AI Powered</div>
+            </div>
+        </div>
+    </section>
 
-                    <button onclick="setQuestion('Which content title has the highest average watch time?')" class="p-4 bg-[#212121] hover:bg-[#262626] border border-[#2e2e2e] hover:border-[#404040] rounded-2xl transition-all flex flex-col gap-1 group">
-                        <span class="font-medium text-neutral-200 group-hover:text-white flex items-center gap-2">💰 Content Watch Time</span>
-                        <span class="text-[11px] text-neutral-400">Inspect content completion rate & watch time</span>
-                    </button>
-                </div>
+    <!-- Live Telecasting & US Market Operations -->
+    <section id="telecasts" class="py-16 bg-white border-y border-slate-200 px-6">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center max-w-2xl mx-auto mb-12">
+                <h2 class="text-xs font-extrabold uppercase tracking-widest text-sky-600 mb-2">Live Telecasts & US Operations</h2>
+                <h3 class="text-3xl font-black text-slate-900 tracking-tight">Real-Time Intelligence Across US Live Telecasts</h3>
+                <p class="text-xs sm:text-sm text-slate-600 mt-3">From live sports broadcasts and national network events to local news telecasts across the United States, Tenetic converts streaming telemetry into actionable advertising value.</p>
             </div>
 
-            <!-- Messages Stream -->
-            <div id="messagesList" class="space-y-6 hidden w-full"></div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center text-xl font-bold mb-4">📡</div>
+                        <h4 class="text-lg font-bold text-slate-900 mb-2">Live Broadcast & Sports Telecasts</h4>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            Provides minute-by-minute audience measurement and ad engagement telemetry during live sports games, award shows, and national broadcasts across major US television markets.
+                        </p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-200 text-[11px] font-bold text-sky-700">
+                        Real-Time Viewer Volume & Ad Impact
+                    </div>
+                </div>
 
+                <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-xl font-bold mb-4">🏙️</div>
+                        <h4 class="text-lg font-bold text-slate-900 mb-2">Local US Station Sales Intelligence</h4>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            Empowers local sales teams across US regions (New York, Los Angeles, Chicago, Dallas, Atlanta, and beyond) to prove inventory value to local advertisers with precision.
+                        </p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-200 text-[11px] font-bold text-indigo-700">
+                        Tenetic Local & Regional Sales Engine
+                    </div>
+                </div>
+
+                <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center text-xl font-bold mb-4">📊</div>
+                        <h4 class="text-lg font-bold text-slate-900 mb-2">CivicScience Consumer Survey Fusion</h4>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            Fuses large-scale daily consumer survey responses from CivicScience with live telecast viewership data to reveal consumer attitudes, purchasing intent, and brand affinity.
+                        </p>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-200 text-[11px] font-bold text-purple-700">
+                        Behavioral Survey & Attitudinal Fusion
+                    </div>
+                </div>
+            </div>
         </div>
-    </main>
+    </section>
 
-    <!-- Floating Bottom Input Bar (ChatGPT / Claude style) -->
-    <footer class="p-4 flex flex-col items-center shrink-0 bg-[#171717]">
-        <div class="w-full max-w-3xl">
-            <form id="askForm" onsubmit="submitQuestion(event)" class="relative flex items-center">
+    <!-- Solutions Offered by Tenetic -->
+    <section id="solutions" class="py-16 px-6 max-w-6xl mx-auto">
+        <div class="text-center max-w-2xl mx-auto mb-12">
+            <h2 class="text-xs font-extrabold uppercase tracking-widest text-sky-600 mb-2">Product Solutions</h2>
+            <h3 class="text-3xl font-black text-slate-900 tracking-tight">Enterprise Analytics Solutions</h3>
+            <p class="text-xs sm:text-sm text-slate-600 mt-2">Designed for media owners, networks, agencies, and brand advertisers.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
+                <h4 class="text-base font-bold text-slate-900 mb-2 flex items-center gap-2">
+                    <span>📊</span> Tenetic Audience & Reach Analytics
+                </h4>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    Instantly ranks media properties, computes monthly/weekly viewer market share, and tracks audience growth trends across streaming platforms and broadcast stations.
+                </p>
+            </div>
+
+            <div class="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
+                <h4 class="text-base font-bold text-slate-900 mb-2 flex items-center gap-2">
+                    <span>⏱️</span> Tenetic Ad Spend & Performance
+                </h4>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    Monitors total campaign ad spend in USD, impression volume, click-through rates (CTR), CPM benchmarks, and advertiser ROI across live telecast slots.
+                </p>
+            </div>
+
+            <div class="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
+                <h4 class="text-base font-bold text-slate-900 mb-2 flex items-center gap-2">
+                    <span>📱</span> Tenetic Regional & Demographics
+                </h4>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    Provides detailed country/regional breakdowns, age/gender demographics, and session duration metrics across mobile iOS, Android, and Web platforms.
+                </p>
+            </div>
+
+            <div class="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
+                <h4 class="text-base font-bold text-slate-900 mb-2 flex items-center gap-2">
+                    <span>💰</span> Tenetic Watch Time & Monetization
+                </h4>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    Analyzes content title watch time in seconds, completion rates, unique user depth, and inventory valuation for premium content.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Company Leadership & Industry Pioneer Heritage -->
+    <section id="leadership" class="py-16 bg-slate-900 text-white px-6">
+        <div class="max-w-6xl mx-auto">
+            <div class="max-w-2xl mb-12">
+                <h2 class="text-xs font-extrabold uppercase tracking-widest text-sky-400 mb-2">Company Leadership</h2>
+                <h3 class="text-3xl font-black tracking-tight">Founded by Research Industry Veterans</h3>
+                <p class="text-xs sm:text-sm text-slate-400 mt-2">Tenetic was launched by industry pioneers with decades of leadership at firms including Media Metrix, The NPD Group, Comscore, McKinsey, and Boston Consulting Group.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-slate-800/80 border border-slate-700 p-6 rounded-2xl">
+                    <div class="text-lg font-bold text-white">Tod Johnson</div>
+                    <div class="text-xs font-semibold text-sky-400 mt-0.5">Co-Founder & Research Pioneer</div>
+                    <p class="text-xs text-slate-300 mt-3 leading-relaxed">
+                        Founder of Media Metrix (the pioneer of digital audience measurement) and former Executive Chairman of The NPD Group. Tod brings unmatched experience in building gold-standard research institutions.
+                    </p>
+                </div>
+
+                <div class="bg-slate-800/80 border border-slate-700 p-6 rounded-2xl">
+                    <div class="text-lg font-bold text-white">Chris Wilson</div>
+                    <div class="text-xs font-semibold text-sky-400 mt-0.5">Chief Executive Officer (CEO)</div>
+                    <p class="text-xs text-slate-300 mt-3 leading-relaxed">
+                        Veteran executive with an extensive leadership background in audience measurement and media analytics, leading Tenetic's mission to make consumer intelligence real-time and dynamic.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Technology & Lakehouse Section -->
+    <section id="technology" class="py-16 px-6 max-w-6xl mx-auto">
+        <div class="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
+            <div class="max-w-2xl mb-8">
+                <h2 class="text-xs font-extrabold uppercase tracking-widest text-sky-600 mb-1">Architecture</h2>
+                <h3 class="text-2xl font-bold text-slate-900">Tenetics 6-Layer Delta Lake Engine</h3>
+                <p class="text-xs text-slate-600 mt-2">High-throughput streaming ingestion running on AWS EC2 with PySpark Data Quality rules and Databricks Genie AI.</p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs">
+                <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                    <div class="font-bold text-sky-700 mb-1">🥉 Bronze Layer</div>
+                    <p class="text-slate-600 text-[11px]">Immutable append-only raw JSON telemetry ingestion landing zone.</p>
+                </div>
+                <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                    <div class="font-bold text-emerald-700 mb-1">🥈 Silver Layer</div>
+                    <p class="text-slate-600 text-[11px]">7 composable Data Quality rules with self-healing quarantine storage.</p>
+                </div>
+                <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                    <div class="font-bold text-purple-700 mb-1">🥇 Gold Layer</div>
+                    <p class="text-slate-600 text-[11px]">Star schema model with 5 dimension tables + central fact table.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="mt-auto border-t border-slate-200 bg-white px-6 py-8 text-xs text-slate-500">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded-lg bg-sky-600 flex items-center justify-center text-white font-bold text-xs">⚡</div>
+                <span class="font-bold text-slate-800">Tenetic Inc. — US Media Intelligence</span>
+            </div>
+            <div>© 2026 Tenetic Inc. All rights reserved. New York, NY.</div>
+            <div class="flex items-center gap-4 text-[11px]">
+                <span class="flex items-center gap-1.5 text-emerald-600 font-semibold"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Live Telecast API: Operational</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Floating Official Tenetic AI Chatbot Widget Trigger Button (Bottom Right) -->
+    <div class="fixed bottom-5 right-5 z-50">
+        <button 
+            onclick="toggleChat()" 
+            id="chatToggleBtn"
+            class="bg-sky-600 hover:bg-sky-700 text-white font-bold px-5 py-3.5 rounded-full shadow-2xl shadow-sky-600/30 flex items-center gap-2.5 transition-all border border-sky-400/40"
+        >
+            <span class="text-base">✦</span>
+            <span class="text-xs tracking-tight">Ask Tenetic AI</span>
+        </button>
+    </div>
+
+    <!-- Official Tenetic Floating AI Chatbot Window -->
+    <div 
+        id="chatWidget" 
+        class="fixed bottom-20 right-5 z-50 w-full max-w-md bg-white border border-slate-300 rounded-3xl shadow-2xl flex flex-col h-[520px] hidden overflow-hidden transition-all"
+    >
+        <!-- Chat Widget Header -->
+        <div class="bg-slate-900 border-b border-slate-800 p-4 flex items-center justify-between shrink-0 text-white">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-sky-600 flex items-center justify-center text-white font-bold text-sm shadow">
+                    ✦
+                </div>
+                <div>
+                    <h3 class="text-xs font-bold tracking-tight">Tenetic AI Assistant</h3>
+                    <p class="text-[10px] text-slate-400">US Telecasts & Media Analytics Gateway</p>
+                </div>
+            </div>
+            <button onclick="toggleChat(false)" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-xs transition-colors">
+                ✕
+            </button>
+        </div>
+
+        <!-- Chat Conversation Stream -->
+        <div id="chatFeed" class="flex-1 overflow-y-auto p-4 space-y-4 text-xs bg-slate-50">
+            <div class="bg-white border border-slate-200 p-3.5 rounded-2xl text-slate-800 leading-relaxed shadow-sm">
+                👋 Welcome to **Tenetic AI**! Ask any question about US live telecasts, property rankings, campaign ad spend, or regional viewer metrics.
+            </div>
+        </div>
+
+        <!-- Quick Question Chips inside Widget -->
+        <div class="px-4 py-2 border-t border-slate-200 bg-white flex flex-wrap gap-1.5 text-[11px]">
+            <button onclick="sendQuickQuery('Which property had the highest total audience in the most recent monthly period?')" class="bg-slate-100 hover:bg-slate-200 text-sky-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium">
+                📊 Top Audience
+            </button>
+            <button onclick="sendQuickQuery('Which campaign had the highest total spend?')" class="bg-slate-100 hover:bg-slate-200 text-purple-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium">
+                ⏱️ Highest Spend
+            </button>
+            <button onclick="sendQuickQuery('What is the average session duration by region?')" class="bg-slate-100 hover:bg-slate-200 text-emerald-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium">
+                📱 Regional Duration
+            </button>
+            <button onclick="sendQuickQuery('Which content title has the highest average watch time?')" class="bg-slate-100 hover:bg-slate-200 text-amber-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium">
+                💰 Content Watch Time
+            </button>
+        </div>
+
+        <!-- Floating Input Form -->
+        <div class="p-3 border-t border-slate-200 bg-white shrink-0">
+            <form onsubmit="handleChatSubmit(event)" class="relative flex items-center">
                 <input 
                     type="text" 
-                    id="questionInput" 
-                    placeholder="Message Media Analytics AI..." 
-                    class="w-full bg-[#212121] border border-[#2e2e2e] focus:border-[#404040] text-white rounded-2xl pl-5 pr-14 py-4 text-sm focus:outline-none transition-colors shadow-inner placeholder-neutral-500" 
+                    id="widgetInput" 
+                    placeholder="Message Tenetic AI..." 
+                    class="w-full bg-slate-100 border border-slate-300 text-slate-900 rounded-xl pl-3.5 pr-12 py-3 text-xs focus:outline-none focus:border-sky-600 transition-colors placeholder-slate-400"
                     required 
                 />
                 <button 
                     type="submit" 
-                    id="sendBtn" 
-                    class="absolute right-2.5 bg-sky-600 hover:bg-sky-500 text-white w-9 h-9 rounded-xl flex items-center justify-center transition-all shadow-md font-bold text-base"
+                    id="widgetSendBtn" 
+                    class="absolute right-1.5 bg-sky-600 hover:bg-sky-700 text-white w-7 h-7 rounded-lg flex items-center justify-center transition-all font-bold text-xs"
                 >
                     ↑
                 </button>
             </form>
-            <p class="text-[11px] text-neutral-500 text-center mt-2.5">Media Analytics AI analyzes live Delta Lake data via Databricks Genie.</p>
         </div>
-    </footer>
+    </div>
 
     <script>
-        const questionInput = document.getElementById('questionInput');
-        const welcomeScreen = document.getElementById('welcomeScreen');
-        const messagesList = document.getElementById('messagesList');
-        const sendBtn = document.getElementById('sendBtn');
+        function toggleChat(open) {
+            const widget = document.getElementById('chatWidget');
+            if (open === undefined) {
+                widget.classList.toggle('hidden');
+            } else if (open) {
+                widget.classList.remove('hidden');
+            } else {
+                widget.classList.add('hidden');
+            }
 
-        function setQuestion(q) {
-            questionInput.value = q;
-            questionInput.focus();
+            if (!widget.classList.contains('hidden')) {
+                document.getElementById('widgetInput').focus();
+            }
         }
 
-        async function submitQuestion(event) {
-            event.preventDefault();
-            const question = questionInput.value.trim();
+        function sendQuickQuery(queryText) {
+            toggleChat(true);
+            document.getElementById('widgetInput').value = queryText;
+            handleChatSubmit(new Event('submit'));
+        }
+
+        async function handleChatSubmit(e) {
+            e.preventDefault();
+            const input = document.getElementById('widgetInput');
+            const feed = document.getElementById('chatFeed');
+            const btn = document.getElementById('widgetSendBtn');
+            const question = input.value.trim();
             if (!question) return;
 
-            // Show Messages Container & Hide Welcome Screen
-            if (welcomeScreen) welcomeScreen.classList.add('hidden');
-            messagesList.classList.remove('hidden');
+            // User Message Bubble
+            const userMsg = document.createElement('div');
+            userMsg.className = 'flex justify-end';
+            userMsg.innerHTML = `
+                <div class="bg-sky-600 text-white px-3.5 py-2.5 rounded-2xl rounded-tr-sm text-xs max-w-[85%] leading-relaxed shadow-sm">
+                    ${escapeHtml(question)}
+                </div>
+            `;
+            feed.appendChild(userMsg);
+            input.value = '';
+            btn.disabled = true;
 
-            appendUserMessage(question);
-            questionInput.value = '';
-            sendBtn.disabled = true;
-
-            const loadingId = appendLoading();
+            // Loading Indicator
+            const loadId = 'load-' + Date.now();
+            const loadMsg = document.createElement('div');
+            loadMsg.id = loadId;
+            loadMsg.className = 'flex items-start gap-2';
+            loadMsg.innerHTML = `
+                <div class="w-6 h-6 rounded-lg bg-sky-600 flex items-center justify-center text-white font-bold text-xs shrink-0">✦</div>
+                <div class="text-slate-500 text-xs italic py-1 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-sky-600 animate-ping"></span> Querying lakehouse...
+                </div>
+            `;
+            feed.appendChild(loadMsg);
+            feed.scrollTop = feed.scrollHeight;
 
             try {
-                const response = await fetch('/ask', {
+                const resp = await fetch('/ask', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ question: question })
                 });
+                document.getElementById(loadId)?.remove();
 
-                removeMessage(loadingId);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    const agentMsg = document.createElement('div');
+                    agentMsg.className = 'flex items-start gap-2.5';
+                    
+                    let formattedHtml = typeof marked !== 'undefined' ? marked.parse(data.answer) : escapeHtml(data.answer);
 
-                if (!response.ok) {
-                    const errData = await response.json().catch(() => ({ detail: response.statusText }));
-                    appendError(`Unable to process query (${response.status}): ${errData.detail || 'Service error'}`);
+                    agentMsg.innerHTML = `
+                        <div class="w-6 h-6 rounded-lg bg-sky-600 flex items-center justify-center text-white font-bold text-xs shrink-0 mt-0.5">✦</div>
+                        <div class="markdown-body text-xs text-slate-800 leading-relaxed bg-white border border-slate-200 p-3.5 rounded-2xl rounded-tl-sm flex-1 shadow-sm">
+                            ${formattedHtml}
+                        </div>
+                    `;
+                    feed.appendChild(agentMsg);
                 } else {
-                    const data = await response.json();
-                    appendAgentResponse(data.answer);
+                    const err = await resp.json().catch(() => ({ detail: 'Service error' }));
+                    const errDiv = document.createElement('div');
+                    errDiv.className = 'bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl text-xs';
+                    errDiv.innerText = `⚠️ Error: ${err.detail || 'Service error'}`;
+                    feed.appendChild(errDiv);
                 }
             } catch (err) {
-                removeMessage(loadingId);
-                appendError(`Connection Error: ${err.message}`);
+                document.getElementById(loadId)?.remove();
+                const errDiv = document.createElement('div');
+                errDiv.className = 'bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl text-xs';
+                errDiv.innerText = `⚠️ Connection error: ${err.message}`;
+                feed.appendChild(errDiv);
             } finally {
-                sendBtn.disabled = false;
-                questionInput.focus();
+                btn.disabled = false;
+                feed.scrollTop = feed.scrollHeight;
             }
-        }
-
-        function appendUserMessage(text) {
-            const div = document.createElement('div');
-            div.className = 'flex justify-end';
-            div.innerHTML = `
-                <div class="bg-[#262626] text-white rounded-2xl rounded-tr-sm px-4 py-3 text-sm max-w-xl shadow-sm border border-[#333333] leading-relaxed">
-                    ${escapeHtml(text)}
-                </div>
-            `;
-            messagesList.appendChild(div);
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-        }
-
-        function appendAgentResponse(rawAnswer) {
-            const div = document.createElement('div');
-            div.className = 'flex items-start gap-4';
-            
-            let formattedHtml = '';
-            if (typeof marked !== 'undefined') {
-                formattedHtml = marked.parse(rawAnswer);
-            } else {
-                formattedHtml = escapeHtml(rawAnswer).replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>').replace(/\\n/g, '<br/>');
-            }
-
-            div.innerHTML = `
-                <div class="w-8 h-8 rounded-full bg-[#262626] border border-[#333333] flex items-center justify-center text-sky-400 font-bold text-sm shrink-0 mt-0.5">
-                    ✦
-                </div>
-                <div class="markdown-body text-sm text-[#ececec] leading-relaxed flex-1">
-                    ${formattedHtml}
-                </div>
-            `;
-            messagesList.appendChild(div);
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-        }
-
-        function appendError(errorText) {
-            const div = document.createElement('div');
-            div.className = 'flex items-start gap-4';
-            div.innerHTML = `
-                <div class="w-8 h-8 rounded-full bg-red-950/80 border border-red-800 text-red-400 font-bold text-xs flex items-center justify-center shrink-0">
-                    !
-                </div>
-                <div class="text-red-400 text-sm py-1">
-                    ⚠️ ${escapeHtml(errorText)}
-                </div>
-            `;
-            messagesList.appendChild(div);
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-        }
-
-        function appendLoading() {
-            const id = 'loading-' + Date.now();
-            const div = document.createElement('div');
-            div.id = id;
-            div.className = 'flex items-start gap-4';
-            div.innerHTML = `
-                <div class="w-8 h-8 rounded-full bg-[#262626] border border-[#333333] flex items-center justify-center text-sky-400 font-bold text-sm shrink-0">
-                    ✦
-                </div>
-                <div class="text-neutral-400 text-sm italic py-1 flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-sky-400 animate-ping"></span> Thinking...
-                </div>
-            `;
-            messagesList.appendChild(div);
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-            return id;
-        }
-
-        function removeMessage(id) {
-            const el = document.getElementById(id);
-            if (el) el.remove();
         }
 
         function escapeHtml(str) {
@@ -374,6 +588,8 @@ HTML_INTERFACE = """<!DOCTYPE html>
 </body>
 </html>
 """
+
+
 
 
 
