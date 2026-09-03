@@ -184,15 +184,12 @@ async def _ask_genie_rest(space_id: str, question: str, clean_host: str, token: 
                                 sql_part = f"```sql\n{q_obj['query'].strip()}\n```"
 
                 full_answer = "\n\n".join(answer_parts).strip()
-                if sql_part:
-                    if full_answer:
-                        return f"{full_answer}\n\n**Generated SQL Query:**\n{sql_part}"
-                    return f"**Generated SQL Query:**\n{sql_part}"
-
                 if full_answer:
-                    return full_answer
+                    # Strip any trailing Generated SQL Query block if present
+                    clean_answer = full_answer.split("**Generated SQL Query:**")[0].strip()
+                    return clean_answer if clean_answer else full_answer
 
-                return f"Genie completed query for space '{space_id}'. Status: {status}."
+                return f"Query completed successfully for space '{space_id}'."
             elif status in ("FAILED", "CANCELLED", "ERROR"):
                 raise RuntimeError(f"Genie space '{space_id}' query failed with status: {status}")
 
