@@ -161,6 +161,69 @@ HTML_INTERFACE = """<!DOCTYPE html>
         .markdown-body pre { background-color: #0f172a; color: #f8fafc; padding: 0.75rem; border-radius: 8px; overflow-x: auto; margin-top: 0.5rem; margin-bottom: 0.5rem; }
         .markdown-body pre code { background: none; color: #38bdf8; padding: 0; }
     </style>
+
+    <script>
+        window.isFullscreenMode = false;
+
+        window.toggleChat = function(open) {
+            const widget = document.getElementById('chatWidget');
+            if (!widget) return;
+
+            if (open === true || open === 1) {
+                widget.style.display = 'flex';
+            } else if (open === false || open === 0) {
+                widget.style.display = 'none';
+            } else {
+                if (widget.style.display === 'none' || widget.style.display === '') {
+                    widget.style.display = 'flex';
+                } else {
+                    widget.style.display = 'none';
+                }
+            }
+
+            if (widget.style.display === 'flex') {
+                setTimeout(() => {
+                    document.getElementById('widgetInput')?.focus();
+                }, 100);
+            }
+        };
+
+        window.toggleFullscreenChat = function() {
+            const widget = document.getElementById('chatWidget');
+            const btnText = document.getElementById('fullscreenBtnText');
+            if (!widget) return;
+
+            window.isFullscreenMode = !window.isFullscreenMode;
+
+            if (window.isFullscreenMode) {
+                widget.style.position = 'fixed';
+                widget.style.top = '0px';
+                widget.style.left = '0px';
+                widget.style.right = '0px';
+                widget.style.bottom = '0px';
+                widget.style.width = '100vw';
+                widget.style.height = '100vh';
+                widget.style.maxWidth = '100vw';
+                widget.style.maxHeight = '100vh';
+                widget.style.borderRadius = '0px';
+                widget.style.zIndex = '999999';
+                if (btnText) btnText.innerText = '🗗 Exit Fullscreen';
+            } else {
+                widget.style.position = 'fixed';
+                widget.style.top = 'auto';
+                widget.style.left = 'auto';
+                widget.style.right = '1.25rem';
+                widget.style.bottom = '5rem';
+                widget.style.width = '100%';
+                widget.style.maxWidth = '28rem';
+                widget.style.height = '520px';
+                widget.style.maxHeight = '520px';
+                widget.style.borderRadius = '1.5rem';
+                widget.style.zIndex = '9999';
+                if (btnText) btnText.innerText = '⛶ Fullscreen';
+            }
+        };
+    </script>
 </head>
 <body class="min-h-screen flex flex-col relative bg-slate-50 text-slate-900 selection:bg-sky-500 selection:text-white">
 
@@ -185,7 +248,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
         </nav>
 
         <div class="flex items-center gap-3">
-            <button onclick="toggleChat(true)" class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-md shadow-sky-600/20 transition-all flex items-center gap-2">
+            <button onclick="window.toggleChat(true)" class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-md shadow-sky-600/20 transition-all flex items-center gap-2">
                 <span>✦ Live AI Portal</span>
             </button>
         </div>
@@ -209,7 +272,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
             <a href="#telecasts" class="bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs px-7 py-4 rounded-xl shadow-lg shadow-sky-600/20 transition-all">
                 View Live Telecast Coverage
             </a>
-            <button onclick="toggleChat(true)" class="bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-bold text-xs px-7 py-4 rounded-xl shadow-sm transition-all">
+            <button onclick="window.toggleChat(true)" class="bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-bold text-xs px-7 py-4 rounded-xl shadow-sm transition-all">
                 ✦ Talk with Tenetic AI
             </button>
         </div>
@@ -407,12 +470,12 @@ HTML_INTERFACE = """<!DOCTYPE html>
         </div>
     </footer>
 
-    <!-- Floating Official Tenetic AI Chatbot Widget Trigger Button (Bottom Right) -->
+    <!-- Floating Official Tenetic AI Chatbot Trigger Button (Bottom Right) -->
     <div class="fixed bottom-5 right-5 z-50">
         <button 
-            onclick="toggleChat()" 
+            onclick="window.toggleChat()" 
             id="chatToggleBtn"
-            class="bg-sky-600 hover:bg-sky-700 text-white font-bold px-5 py-3.5 rounded-full shadow-2xl shadow-sky-600/30 flex items-center gap-2.5 transition-all border border-sky-400/40"
+            class="bg-sky-600 hover:bg-sky-700 text-white font-bold px-5 py-3.5 rounded-full shadow-2xl shadow-sky-600/30 flex items-center gap-2.5 transition-all border border-sky-400/40 cursor-pointer"
         >
             <span class="text-base">✦</span>
             <span class="text-xs tracking-tight">Ask Tenetic AI</span>
@@ -422,7 +485,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
     <!-- Official Tenetic Floating AI Chatbot Window -->
     <div 
         id="chatWidget" 
-        style="display: none; position: fixed; bottom: 5rem; right: 1.25rem; width: 100%; max-width: 28rem; height: 520px; z-index: 9999;"
+        style="display: flex; position: fixed; bottom: 5rem; right: 1.25rem; width: 100%; max-width: 28rem; height: 520px; z-index: 9999;"
         class="bg-white border border-slate-300 rounded-3xl shadow-2xl flex flex-col overflow-hidden transition-all"
     >
         <!-- Chat Widget Header with Fullscreen and Close controls -->
@@ -436,11 +499,20 @@ HTML_INTERFACE = """<!DOCTYPE html>
                     <p class="text-[10px] text-slate-400">US Telecasts & Media Analytics Gateway</p>
                 </div>
             </div>
-            <div class="flex items-center gap-1.5">
-                <button onclick="toggleFullscreenChat()" id="fullscreenToggleBtn" title="Maximize Fullscreen" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center text-xs transition-colors font-mono border border-slate-700">
-                    ⛶
+            <div class="flex items-center gap-2">
+                <button 
+                    onclick="window.toggleFullscreenChat()" 
+                    id="fullscreenToggleBtn" 
+                    title="Maximize Fullscreen" 
+                    class="px-2.5 py-1 rounded-lg bg-sky-700 hover:bg-sky-600 text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer border border-sky-500/50 shadow-sm"
+                >
+                    <span id="fullscreenBtnText">⛶ Fullscreen</span>
                 </button>
-                <button onclick="toggleChat(false)" title="Close Chat" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-xs transition-colors border border-slate-700">
+                <button 
+                    onclick="window.toggleChat(false)" 
+                    title="Close Chat" 
+                    class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-xs transition-colors border border-slate-700 cursor-pointer"
+                >
                     ✕
                 </button>
             </div>
@@ -491,9 +563,6 @@ HTML_INTERFACE = """<!DOCTYPE html>
     </div>
 
     <script>
-        let isFullscreen = false;
-
-        function toggleChat(open) {
             const widget = document.getElementById('chatWidget');
             if (!widget) return;
 
