@@ -424,7 +424,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
         id="chatWidget" 
         class="fixed bottom-20 right-5 z-50 w-full max-w-md bg-white border border-slate-300 rounded-3xl shadow-2xl flex flex-col h-[520px] hidden overflow-hidden transition-all"
     >
-        <!-- Chat Widget Header -->
+        <!-- Chat Widget Header with Fullscreen and Close controls -->
         <div class="bg-slate-900 border-b border-slate-800 p-4 flex items-center justify-between shrink-0 text-white">
             <div class="flex items-center gap-2.5">
                 <div class="w-8 h-8 rounded-xl bg-sky-600 flex items-center justify-center text-white font-bold text-sm shadow">
@@ -435,9 +435,14 @@ HTML_INTERFACE = """<!DOCTYPE html>
                     <p class="text-[10px] text-slate-400">US Telecasts & Media Analytics Gateway</p>
                 </div>
             </div>
-            <button onclick="toggleChat(false)" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-xs transition-colors">
-                ✕
-            </button>
+            <div class="flex items-center gap-1.5">
+                <button onclick="toggleFullscreenChat()" id="fullscreenToggleBtn" title="Toggle Fullscreen" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center text-xs transition-colors font-mono">
+                    ⛶
+                </button>
+                <button onclick="toggleChat(false)" title="Close Chat" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-xs transition-colors">
+                    ✕
+                </button>
+            </div>
         </div>
 
         <!-- Chat Conversation Stream -->
@@ -485,6 +490,8 @@ HTML_INTERFACE = """<!DOCTYPE html>
     </div>
 
     <script>
+        let isFullscreen = false;
+
         function toggleChat(open) {
             const widget = document.getElementById('chatWidget');
             if (open === undefined) {
@@ -500,10 +507,75 @@ HTML_INTERFACE = """<!DOCTYPE html>
             }
         }
 
+        function toggleFullscreenChat() {
+            const widget = document.getElementById('chatWidget');
+            const btn = document.getElementById('fullscreenToggleBtn');
+            isFullscreen = !isFullscreen;
+
+            if (isFullscreen) {
+                widget.classList.remove('bottom-20', 'right-5', 'w-full', 'max-w-md', 'h-[520px]', 'rounded-3xl');
+                widget.classList.add('inset-0', 'w-screen', 'h-screen', 'rounded-none', 'max-w-none', 'z-50', 'fixed');
+                btn.innerHTML = '🗗';
+                btn.title = 'Restore Window';
+            } else {
+                widget.classList.remove('inset-0', 'w-screen', 'h-screen', 'rounded-none', 'max-w-none', 'z-50', 'fixed');
+                widget.classList.add('bottom-20', 'right-5', 'w-full', 'max-w-md', 'h-[520px]', 'rounded-3xl', 'fixed');
+                btn.innerHTML = '⛶';
+                btn.title = 'Maximize Fullscreen';
+            }
+        }
+
         function sendQuickQuery(queryText) {
             toggleChat(true);
             document.getElementById('widgetInput').value = queryText;
             handleChatSubmit(new Event('submit'));
+        }
+
+        function generateDynamicComparisonChart(cleanText) {
+            const items = [];
+            const regex = /[-*•]?\s*\*?\*?([^:\d\n]+?)\*?\*?:\s*\$?([\d,]+(?:\.\d+)?)/g;
+            let match;
+
+            while ((match = regex.exec(cleanText)) !== null) {
+                const label = match[1].replace(/[*_]/g, '').trim();
+                const numStr = match[2].replace(/,/g, '');
+                const val = parseFloat(numStr);
+                if (!isNaN(val) && label.length >= 2 && label.length <= 40 && val > 0) {
+                    items.push({ label, val, raw: match[2] });
+                }
+            }
+
+            if (items.length >= 2) {
+                const maxVal = Math.max(...items.map(i => i.val));
+                const colors = ['bg-sky-600', 'bg-indigo-600', 'bg-purple-600', 'bg-emerald-600', 'bg-amber-600'];
+                
+                let barsHtml = items.slice(0, 5).map((item, idx) => {
+                    const pct = Math.round((item.val / maxVal) * 100);
+                    const color = colors[idx % colors.length];
+                    return `
+                    <div>
+                        <div class="flex justify-between text-[11px] font-semibold text-slate-700 mb-0.5">
+                            <span>${idx + 1}. ${escapeHtml(item.label)}</span>
+                            <span class="font-mono text-sky-800">${item.raw}</span>
+                        </div>
+                        <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
+                            <div class="${color} h-full rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+                        </div>
+                    </div>`;
+                }).join('');
+
+                return `
+                <div class="mt-3 p-3.5 bg-slate-100 border border-slate-300 rounded-xl text-xs shadow-sm">
+                    <div class="font-bold text-slate-900 mb-2 flex items-center justify-between">
+                        <span>📊 Top Record Analytics Comparison (${items.length} Properties)</span>
+                        <span class="text-[10px] text-sky-700 font-mono font-semibold">Real-Time Lakehouse</span>
+                    </div>
+                    <div class="space-y-2.5">
+                        ${barsHtml}
+                    </div>
+                </div>`;
+            }
+            return '';
         }
 
         function formatBusinessAnswer(rawAnswer) {
@@ -513,9 +585,14 @@ HTML_INTERFACE = """<!DOCTYPE html>
             // 2. Parse Markdown
             let html = typeof marked !== 'undefined' ? marked.parse(clean) : clean;
             
-            // 3. Render Executive Visual Metrics Widget Cards if numbers/rankings match
+            // 3. Try multi-item dynamic comparison chart first
+            let chartHtml = generateDynamicComparisonChart(clean);
+            if (chartHtml) {
+                return html + chartHtml;
+            }
+
+            // 4. Fallback single-item metric cards if only 1 metric present
             let visualWidget = '';
-            
             if (clean.includes('1,192,842,191') || clean.includes('Media Gamma')) {
                 visualWidget = `
                 <div class="mt-3 p-3.5 bg-sky-50 border border-sky-200 rounded-xl text-xs shadow-sm">
@@ -569,21 +646,6 @@ HTML_INTERFACE = """<!DOCTYPE html>
                                 <div class="bg-slate-400 h-full rounded-full" style="width: 72%"></div>
                             </div>
                         </div>
-                    </div>
-                </div>`;
-            } else if (clean.includes('1218') || clean.includes('1,811') || clean.includes('watch time') || clean.includes('completion')) {
-                visualWidget = `
-                <div class="mt-3 p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs shadow-sm">
-                    <div class="font-bold text-amber-900 mb-1 flex items-center justify-between">
-                        <span>💰 Watch Time & Completion Depth</span>
-                        <span class="font-mono text-amber-800">1,811.04s Avg</span>
-                    </div>
-                    <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden mt-1.5">
-                        <div class="bg-amber-600 h-full rounded-full" style="width: 90%"></div>
-                    </div>
-                    <div class="flex justify-between text-[10px] text-slate-600 mt-1 font-semibold">
-                        <span>Content Title 1218</span>
-                        <span>Top Completion Depth</span>
                     </div>
                 </div>`;
             }
