@@ -148,7 +148,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Databricks Genie Multi-Agent Supervisor Portal</title>
+    <title>Executive Media Analytics AI Assistant</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
@@ -157,135 +157,112 @@ HTML_INTERFACE = """<!DOCTYPE html>
         .markdown-body p { margin-bottom: 0.5rem; }
         .markdown-body ul { list-style-type: disc; margin-left: 1.25rem; margin-bottom: 0.5rem; }
         .markdown-body ol { list-style-type: decimal; margin-left: 1.25rem; margin-bottom: 0.5rem; }
-        .markdown-body code { background-color: #1e293b; color: #f43f5e; padding: 0.1rem 0.3rem; border-radius: 4px; font-size: 0.85em; }
+        .markdown-body code { background-color: #1e293b; color: #f43f5e; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.85em; }
+        .markdown-body pre { background-color: #020617; border: 1px solid #1e293b; padding: 1rem; border-radius: 8px; overflow-x: auto; margin-top: 0.5rem; }
+        .markdown-body pre code { background: none; color: #38bdf8; padding: 0; }
     </style>
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
-    <!-- Top Navigation Header -->
-    <header class="bg-slate-900 border-b border-slate-800 px-6 py-3.5 flex items-center justify-between shadow-lg">
-        <div>
-            <div class="flex items-center gap-3">
-                <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
-                <h1 class="text-xl font-bold text-sky-400 tracking-tight">Databricks Genie Multi-Agent Supervisor</h1>
+    <!-- Executive Top Header -->
+    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between shadow-lg">
+        <div class="flex items-center gap-3.5">
+            <div class="w-10 h-10 rounded-xl bg-sky-600/20 border border-sky-500/30 flex items-center justify-center text-sky-400 font-bold text-lg shadow-inner">
+                ⚡
             </div>
-            <p class="text-xs text-slate-400 mt-0.5">Routes NL questions across 4 domain agents: Audience Reach, Engagement, Composition & Monetization</p>
+            <div>
+                <h1 class="text-xl font-bold text-slate-100 tracking-tight">Executive Media Intelligence Assistant</h1>
+                <p class="text-xs text-slate-400 mt-0.5">Real-time conversational AI for media properties, ad campaigns, and viewer metrics</p>
+            </div>
         </div>
-        <div class="flex items-center gap-2">
-            <span class="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full font-medium flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-emerald-400"></span> 4 Managed MCP Agents Online
+        <div class="flex items-center gap-3">
+            <span class="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full font-semibold flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Lakehouse Connected
             </span>
         </div>
     </header>
 
-    <!-- Main Container -->
+    <!-- Main Workspace -->
     <div class="flex-1 flex overflow-hidden">
-        <!-- Sidebar Domain Agents Overview (Interactive Clickable Cards) -->
-        <aside class="w-80 bg-slate-900/60 border-r border-slate-800 p-4 flex flex-col gap-4 hidden lg:flex">
-            <div class="flex items-center justify-between">
-                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">Domain Agents (Click to Target)</h2>
-                <button onclick="selectAgent('auto')" id="autoBtn" class="text-[10px] bg-sky-600 text-white font-semibold px-2 py-0.5 rounded transition-all">Auto-Route</button>
-            </div>
-            <div class="space-y-2.5">
-                <!-- Agent Card 1: Audience & Reach -->
-                <div onclick="selectAgent('audience_reach')" id="card-audience_reach" class="agent-card p-3 rounded-xl border border-sky-500/40 bg-slate-900/90 cursor-pointer hover:border-sky-400 transition-all shadow-md">
-                    <div class="flex items-center justify-between">
+        <!-- Sidebar Metrics Overview (Business Focus) -->
+        <aside class="w-80 bg-slate-900/60 border-r border-slate-800 p-5 flex flex-col gap-5 hidden lg:flex">
+            <div>
+                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Key Metrics Tracked</h2>
+                <div class="space-y-3">
+                    <div class="p-3.5 rounded-xl border border-slate-800 bg-slate-900/90 shadow-sm">
                         <div class="font-semibold text-sm text-sky-400 flex items-center gap-2">
                             <span>📊</span> Audience & Reach
                         </div>
-                        <span id="badge-audience_reach" class="text-[9px] bg-sky-500/20 text-sky-300 px-1.5 py-0.5 rounded font-bold uppercase">Active</span>
+                        <p class="text-xs text-slate-400 mt-1">Property rankings, total viewer counts, and monthly audience share.</p>
                     </div>
-                    <p class="text-xs text-slate-400 mt-1">Property rankings, viewer counts, audience share & trends.</p>
-                    <div class="text-[10px] font-mono text-slate-500 mt-2">Space ID: 01f1a1fd42bf12...</div>
-                </div>
-
-                <!-- Agent Card 2: Engagement -->
-                <div onclick="selectAgent('engagement')" id="card-engagement" class="agent-card p-3 rounded-xl border border-slate-800 bg-slate-900/40 cursor-pointer hover:border-purple-400 transition-all">
-                    <div class="flex items-center justify-between">
+                    <div class="p-3.5 rounded-xl border border-slate-800 bg-slate-900/90 shadow-sm">
                         <div class="font-semibold text-sm text-purple-400 flex items-center gap-2">
-                            <span>⏱️</span> Engagement
+                            <span>⏱️</span> Ad Performance & Spend
                         </div>
-                        <span id="badge-engagement" class="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-bold uppercase">Standby</span>
+                        <p class="text-xs text-slate-400 mt-1">Campaign ad spend in USD, impression yields, and conversion rates.</p>
                     </div>
-                    <p class="text-xs text-slate-400 mt-1">Average watch time, session duration & completion rates.</p>
-                    <div class="text-[10px] font-mono text-slate-500 mt-2">Space ID: 01f1a6061e7110...</div>
-                </div>
-
-                <!-- Agent Card 3: Composition -->
-                <div onclick="selectAgent('composition')" id="card-composition" class="agent-card p-3 rounded-xl border border-slate-800 bg-slate-900/40 cursor-pointer hover:border-emerald-400 transition-all">
-                    <div class="flex items-center justify-between">
+                    <div class="p-3.5 rounded-xl border border-slate-800 bg-slate-900/90 shadow-sm">
                         <div class="font-semibold text-sm text-emerald-400 flex items-center gap-2">
-                            <span>📱</span> Composition
+                            <span>📱</span> Regional Engagement
                         </div>
-                        <span id="badge-composition" class="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-bold uppercase">Standby</span>
+                        <p class="text-xs text-slate-400 mt-1">Demographics, regional session durations, and country distribution.</p>
                     </div>
-                    <p class="text-xs text-slate-400 mt-1">Demographics, platforms, device split & overlap index.</p>
-                    <div class="text-[10px] font-mono text-slate-500 mt-2">Space ID: 01f1a605b30a1a...</div>
-                </div>
-
-                <!-- Agent Card 4: Monetization -->
-                <div onclick="selectAgent('monetization')" id="card-monetization" class="agent-card p-3 rounded-xl border border-slate-800 bg-slate-900/40 cursor-pointer hover:border-amber-400 transition-all">
-                    <div class="flex items-center justify-between">
+                    <div class="p-3.5 rounded-xl border border-slate-800 bg-slate-900/90 shadow-sm">
                         <div class="font-semibold text-sm text-amber-400 flex items-center gap-2">
-                            <span>💰</span> Monetization
+                            <span>💰</span> Content Watch Time
                         </div>
-                        <span id="badge-monetization" class="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-bold uppercase">Standby</span>
+                        <p class="text-xs text-slate-400 mt-1">Content title watch times, completion depth, and unique user retention.</p>
                     </div>
-                    <p class="text-xs text-slate-400 mt-1">Ad revenue, CPM yields, ARPU & fill rate analytics.</p>
-                    <div class="text-[10px] font-mono text-slate-500 mt-2">Space ID: 01f1a6065b8713...</div>
                 </div>
+            </div>
+
+            <div class="mt-auto p-3.5 rounded-xl border border-slate-800/80 bg-slate-950/60 text-slate-400 text-xs leading-relaxed">
+                💡 <strong class="text-slate-300">Executive Tip:</strong> Click any quick suggestion button or type custom questions to get instant, AI-generated answers.
             </div>
         </aside>
 
-        <!-- Chat Workspace -->
+        <!-- Executive Chatbot Workspace -->
         <main class="flex-1 flex flex-col bg-slate-950 p-6 overflow-hidden">
-            <!-- Domain Selection Tabs -->
+            <!-- Quick Business Questions Chips -->
             <div class="flex flex-wrap items-center gap-2 mb-4">
-                <span class="text-xs font-semibold text-slate-400 mr-1">Agent Mode:</span>
-                <button onclick="selectAgent('auto')" id="tab-auto" class="text-xs bg-sky-600 text-white font-medium px-3 py-1.5 rounded-lg transition-all">⚡ Auto-Route</button>
-                <button onclick="selectAgent('audience_reach')" id="tab-audience_reach" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-sky-400 px-3 py-1.5 rounded-lg transition-all">📊 Audience & Reach</button>
-                <button onclick="selectAgent('engagement')" id="tab-engagement" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-purple-400 px-3 py-1.5 rounded-lg transition-all">⏱️ Engagement</button>
-                <button onclick="selectAgent('composition')" id="tab-composition" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-emerald-400 px-3 py-1.5 rounded-lg transition-all">📱 Composition</button>
-                <button onclick="selectAgent('monetization')" id="tab-monetization" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-amber-400 px-3 py-1.5 rounded-lg transition-all">💰 Monetization</button>
-            </div>
-
-            <!-- Quick Suggestion Chips (100% Verified Working Queries) -->
-            <div class="flex flex-wrap gap-2 mb-4">
-                <button onclick="setQuestion('Which property had the highest total audience in the most recent monthly period?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-sky-400 px-3 py-1.5 rounded-lg transition-all shadow-sm">
+                <span class="text-xs font-semibold text-slate-400 mr-1">Quick Questions:</span>
+                <button onclick="setQuestion('Which property had the highest total audience in the most recent monthly period?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-sky-400 font-medium px-3.5 py-1.5 rounded-lg transition-all shadow-sm flex items-center gap-1.5">
                     📊 Top Audience Property
                 </button>
-                <button onclick="setQuestion('Which campaign had the highest total spend?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-purple-400 px-3 py-1.5 rounded-lg transition-all shadow-sm">
+                <button onclick="setQuestion('Which campaign had the highest total spend?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-purple-400 font-medium px-3.5 py-1.5 rounded-lg transition-all shadow-sm flex items-center gap-1.5">
                     ⏱️ Highest Campaign Spend
                 </button>
-                <button onclick="setQuestion('What is the average session duration by region?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-emerald-400 px-3 py-1.5 rounded-lg transition-all shadow-sm">
+                <button onclick="setQuestion('What is the average session duration by region?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-emerald-400 font-medium px-3.5 py-1.5 rounded-lg transition-all shadow-sm flex items-center gap-1.5">
                     📱 Session Duration by Region
                 </button>
-                <button onclick="setQuestion('Which content title has the highest average watch time?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-amber-400 px-3 py-1.5 rounded-lg transition-all shadow-sm">
+                <button onclick="setQuestion('Which content title has the highest average watch time?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-amber-400 font-medium px-3.5 py-1.5 rounded-lg transition-all shadow-sm flex items-center gap-1.5">
                     💰 Highest Watch Time Content
                 </button>
             </div>
 
             <!-- Messages History -->
             <div id="chatHistory" class="flex-1 overflow-y-auto space-y-4 pr-2">
-                <div class="flex flex-col items-start max-w-2xl">
+                <div class="flex items-start gap-3 max-w-3xl">
+                    <div class="w-8 h-8 rounded-xl bg-sky-600 flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-md">
+                        AI
+                    </div>
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl rounded-tl-sm p-4 text-sm leading-relaxed text-slate-200 shadow-md">
-                        👋 Welcome to the **Databricks Genie Multi-Agent Supervisor** portal!<br/><br/>
-                        Select an agent card on the left or type your question below. The supervisor automatically routes questions to the corresponding Databricks Managed MCP Genie Agent!
+                        👋 Welcome! I am your <strong>Executive Media Intelligence Assistant</strong>.<br/><br/>
+                        Ask any question about your media properties, viewer growth, campaign ad spend, or regional engagement metrics below.
                     </div>
                 </div>
             </div>
 
-            <!-- Input Bar -->
+            <!-- Input Form -->
             <form id="askForm" onsubmit="submitQuestion(event)" class="mt-4 flex gap-3">
-                <input type="text" id="questionInput" placeholder="Ask a question (e.g. Which property had the highest audience last month?)" class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors" required />
-                <button type="submit" id="sendBtn" class="bg-sky-600 hover:bg-sky-500 text-white font-semibold text-sm px-6 py-3 rounded-xl transition-all shadow-lg shadow-sky-600/20 flex items-center gap-2">
-                    <span>Send Question</span>
+                <input type="text" id="questionInput" placeholder="Ask a business question (e.g. Which property had the highest audience last month?)" class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors shadow-inner" required />
+                <button type="submit" id="sendBtn" class="bg-sky-600 hover:bg-sky-500 text-white font-semibold text-sm px-6 py-3.5 rounded-xl transition-all shadow-lg shadow-sky-600/20 flex items-center gap-2">
+                    <span>Ask AI</span>
                 </button>
             </form>
         </main>
     </div>
 
     <script>
-        let selectedDomain = 'auto';
         const questionInput = document.getElementById('questionInput');
         const chatHistory = document.getElementById('chatHistory');
         const sendBtn = document.getElementById('sendBtn');
@@ -295,86 +272,38 @@ HTML_INTERFACE = """<!DOCTYPE html>
             questionInput.focus();
         }
 
-        const SAMPLE_QUESTIONS = {
-            'audience_reach': 'Which property had the highest total audience in the most recent monthly period?',
-            'engagement': 'Which campaign had the highest total spend?',
-            'composition': 'What is the average session duration by region?',
-            'monetization': 'Which content title has the highest average watch time?',
-            'auto': 'Which property had the highest total audience in the most recent monthly period?'
-        };
-
-        function selectAgent(domain) {
-            selectedDomain = domain;
-            
-            // Update Card Highlights
-            const domains = ['audience_reach', 'engagement', 'composition', 'monetization'];
-            domains.forEach(d => {
-                const card = document.getElementById('card-' + d);
-                const badge = document.getElementById('badge-' + d);
-                const tab = document.getElementById('tab-' + d);
-                
-                if (d === domain) {
-                    if (card) { card.className = 'agent-card p-3 rounded-xl border border-sky-400 bg-slate-900/90 shadow-lg ring-1 ring-sky-400/50 cursor-pointer transition-all'; }
-                    if (badge) { badge.className = 'text-[9px] bg-sky-500 text-white px-1.5 py-0.5 rounded font-bold uppercase'; badge.innerText = 'TARGETED'; }
-                    if (tab) { tab.className = 'text-xs bg-sky-600 text-white font-semibold px-3 py-1.5 rounded-lg transition-all shadow'; }
-                } else {
-                    if (card) { card.className = 'agent-card p-3 rounded-xl border border-slate-800 bg-slate-900/40 cursor-pointer hover:border-slate-700 transition-all'; }
-                    if (badge) { badge.className = 'text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-bold uppercase'; badge.innerText = 'STANDBY'; }
-                    if (tab) { tab.className = 'text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 px-3 py-1.5 rounded-lg transition-all'; }
-                }
-            });
-
-            const autoBtn = document.getElementById('autoBtn');
-            const tabAuto = document.getElementById('tab-auto');
-            if (domain === 'auto') {
-                if (autoBtn) autoBtn.className = 'text-[10px] bg-sky-600 text-white font-semibold px-2 py-0.5 rounded shadow';
-                if (tabAuto) tabAuto.className = 'text-xs bg-sky-600 text-white font-semibold px-3 py-1.5 rounded-lg transition-all shadow';
-            } else {
-                if (autoBtn) autoBtn.className = 'text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded hover:text-white';
-                if (tabAuto) tabAuto.className = 'text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 px-3 py-1.5 rounded-lg transition-all';
-            }
-
-            if (SAMPLE_QUESTIONS[domain]) {
-                questionInput.value = SAMPLE_QUESTIONS[domain];
-                questionInput.focus();
-            }
-        }
-
         async function submitQuestion(event) {
             event.preventDefault();
             const question = questionInput.value.trim();
             if (!question) return;
 
+            // Render User Message
             appendUserMessage(question);
             questionInput.value = '';
             sendBtn.disabled = true;
 
+            // Render Loading Message
             const loadingId = appendLoading();
 
             try {
-                const payload = { question: question };
-                if (selectedDomain !== 'auto') {
-                    payload.domain = selectedDomain;
-                }
-
                 const response = await fetch('/ask', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({ question: question })
                 });
 
                 removeMessage(loadingId);
 
                 if (!response.ok) {
                     const errData = await response.json().catch(() => ({ detail: response.statusText }));
-                    appendError(`Error (${response.status}): ${errData.detail || 'Failed to query agent'}`);
+                    appendError(`Unable to process query (${response.status}): ${errData.detail || 'Service error'}`);
                 } else {
                     const data = await response.json();
-                    appendAgentResponse(data.domain, data.answer);
+                    appendAgentResponse(data.answer);
                 }
             } catch (err) {
                 removeMessage(loadingId);
-                appendError(`Network / Service Error: ${err.message}`);
+                appendError(`Connection Error: ${err.message}`);
             } finally {
                 sendBtn.disabled = false;
                 questionInput.focus();
@@ -383,18 +312,20 @@ HTML_INTERFACE = """<!DOCTYPE html>
 
         function appendUserMessage(text) {
             const div = document.createElement('div');
-            div.className = 'flex flex-col items-end';
-            div.innerHTML = `<div class="bg-sky-600 text-white font-medium rounded-2xl rounded-tr-sm px-4 py-3 text-sm max-w-xl shadow-md">${escapeHtml(text)}</div>`;
+            div.className = 'flex justify-end';
+            div.innerHTML = `
+                <div class="bg-sky-600 text-white font-medium rounded-2xl rounded-tr-sm px-4 py-3 text-sm max-w-xl shadow-md leading-relaxed">
+                    ${escapeHtml(text)}
+                </div>
+            `;
             chatHistory.appendChild(div);
             chatHistory.scrollTop = chatHistory.scrollHeight;
         }
 
-        function appendAgentResponse(domain, rawAnswer) {
+        function appendAgentResponse(rawAnswer) {
             const div = document.createElement('div');
-            div.className = 'flex flex-col items-start max-w-3xl';
-            const badge = getDomainBadge(domain);
+            div.className = 'flex items-start gap-3 max-w-3xl';
             
-            // Format Markdown properly using marked library if available, else format basic bold/bullets
             let formattedHtml = '';
             if (typeof marked !== 'undefined') {
                 formattedHtml = marked.parse(rawAnswer);
@@ -403,8 +334,12 @@ HTML_INTERFACE = """<!DOCTYPE html>
             }
 
             div.innerHTML = `
-                <div class="mb-1">${badge}</div>
-                <div class="markdown-body bg-slate-900 border border-slate-800 rounded-2xl rounded-tl-sm p-4 text-sm leading-relaxed text-slate-200 shadow-md">${formattedHtml}</div>
+                <div class="w-8 h-8 rounded-xl bg-sky-600 flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-md">
+                    AI
+                </div>
+                <div class="markdown-body bg-slate-900 border border-slate-800 rounded-2xl rounded-tl-sm p-4 text-sm leading-relaxed text-slate-200 shadow-md flex-1">
+                    ${formattedHtml}
+                </div>
             `;
             chatHistory.appendChild(div);
             chatHistory.scrollTop = chatHistory.scrollHeight;
@@ -412,8 +347,15 @@ HTML_INTERFACE = """<!DOCTYPE html>
 
         function appendError(errorText) {
             const div = document.createElement('div');
-            div.className = 'flex flex-col items-start max-w-2xl';
-            div.innerHTML = `<div class="bg-red-950/80 border border-red-800 text-red-300 rounded-2xl rounded-tl-sm p-4 text-sm shadow-md">⚠️ ${escapeHtml(errorText)}</div>`;
+            div.className = 'flex items-start gap-3 max-w-2xl';
+            div.innerHTML = `
+                <div class="w-8 h-8 rounded-xl bg-red-600 flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-md">
+                    !
+                </div>
+                <div class="bg-red-950/80 border border-red-800 text-red-300 rounded-2xl rounded-tl-sm p-4 text-sm shadow-md">
+                    ⚠️ ${escapeHtml(errorText)}
+                </div>
+            `;
             chatHistory.appendChild(div);
             chatHistory.scrollTop = chatHistory.scrollHeight;
         }
@@ -422,8 +364,15 @@ HTML_INTERFACE = """<!DOCTYPE html>
             const id = 'loading-' + Date.now();
             const div = document.createElement('div');
             div.id = id;
-            div.className = 'flex flex-col items-start max-w-xl';
-            div.innerHTML = `<div class="bg-slate-900 border border-slate-800 rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-slate-400 italic flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-sky-400 animate-ping"></span> Routing question to target Genie agent & querying Databricks via Managed MCP...</div>`;
+            div.className = 'flex items-start gap-3 max-w-xl';
+            div.innerHTML = `
+                <div class="w-8 h-8 rounded-xl bg-sky-600/30 border border-sky-500/40 flex items-center justify-center text-sky-400 font-bold text-xs shrink-0">
+                    AI
+                </div>
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-slate-400 italic flex items-center gap-2 shadow-md">
+                    <span class="w-2 h-2 rounded-full bg-sky-400 animate-ping"></span> Analyzing media analytics lakehouse...
+                </div>
+            `;
             chatHistory.appendChild(div);
             chatHistory.scrollTop = chatHistory.scrollHeight;
             return id;
@@ -432,14 +381,6 @@ HTML_INTERFACE = """<!DOCTYPE html>
         function removeMessage(id) {
             const el = document.getElementById(id);
             if (el) el.remove();
-        }
-
-        function getDomainBadge(domain) {
-            const d = (domain || 'audience_reach').toLowerCase();
-            if (d.includes('monetization')) return '<span class="inline-block bg-amber-500/20 text-amber-400 border border-amber-500/30 font-bold text-[10px] tracking-wider uppercase px-2.5 py-1 rounded-full">Routed to: Monetization</span>';
-            if (d.includes('composition')) return '<span class="inline-block bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold text-[10px] tracking-wider uppercase px-2.5 py-1 rounded-full">Routed to: Composition</span>';
-            if (d.includes('engagement')) return '<span class="inline-block bg-purple-500/20 text-purple-400 border border-purple-500/30 font-bold text-[10px] tracking-wider uppercase px-2.5 py-1 rounded-full">Routed to: Engagement</span>';
-            return '<span class="inline-block bg-sky-500/20 text-sky-400 border border-sky-500/30 font-bold text-[10px] tracking-wider uppercase px-2.5 py-1 rounded-full">Routed to: Audience & Reach</span>';
         }
 
         function escapeHtml(str) {
