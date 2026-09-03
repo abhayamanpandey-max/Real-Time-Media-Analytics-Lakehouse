@@ -107,6 +107,10 @@ HTML_INTERFACE = """<!DOCTYPE html>
 
             if (open === true || open === 1) {
                 widget.style.display = 'flex';
+                widget.classList.add('ring-4', 'ring-sky-400');
+                setTimeout(function() {
+                    widget.classList.remove('ring-4', 'ring-sky-400');
+                }, 800);
             } else if (open === false || open === 0) {
                 widget.style.display = 'none';
             } else {
@@ -167,7 +171,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
 
         window.formatBusinessAnswer = function(rawAnswer) {
             var clean = rawAnswer.replace(/```sql[\\s\\S]*?```/gi, '').replace(/\\*\\*Generated SQL Query:\\*\\*/gi, '').trim();
-            var html = (typeof marked !== 'undefined') ? marked.parse(clean) : clean.replace(/\n/g, '<br>');
+            var html = (typeof marked !== 'undefined') ? marked.parse(clean) : clean.replace(/\\n/g, '<br>');
             var chartHtml = window.generateDynamicComparisonChart(clean);
             if (chartHtml) return html + chartHtml;
             var viz = '';
@@ -181,7 +185,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
             return html + viz;
         };
 
-        // Core submit logic — receives question text directly, no fake Event needed
+        // Core submit logic — receives question text directly
         window._submitQuestion = async function(question) {
             var feed = document.getElementById('chatFeed');
             var btn = document.getElementById('widgetSendBtn');
@@ -193,14 +197,14 @@ HTML_INTERFACE = """<!DOCTYPE html>
 
             var userMsg = document.createElement('div');
             userMsg.className = 'flex justify-end';
-            userMsg.innerHTML = '<div class="bg-sky-600 text-white px-3.5 py-2.5 rounded-2xl rounded-tr-sm text-xs max-w-[85%] leading-relaxed shadow-sm">' + window.escapeHtml(question) + '</div>';
+            userMsg.innerHTML = '<div class="bg-sky-600 text-white px-3.5 py-2.5 rounded-2xl rounded-tr-sm text-xs max-w-[85%] leading-relaxed shadow-sm font-medium">' + window.escapeHtml(question) + '</div>';
             feed.appendChild(userMsg);
 
             var loadId = 'load-' + Date.now();
             var loadMsg = document.createElement('div');
             loadMsg.id = loadId;
-            loadMsg.className = 'flex items-start gap-2';
-            loadMsg.innerHTML = '<div class="w-6 h-6 rounded-lg bg-sky-600 flex items-center justify-center text-white font-bold text-xs shrink-0">✦</div><div class="text-slate-500 text-xs italic py-1 flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-sky-600 animate-ping"></span> Querying lakehouse...</div>';
+            loadMsg.className = 'flex items-start gap-2.5 bg-sky-50 border border-sky-200 p-2.5 rounded-xl';
+            loadMsg.innerHTML = '<div class="w-6 h-6 rounded-lg bg-sky-600 flex items-center justify-center text-white font-bold text-xs shrink-0 mt-0.5">✦</div><div class="text-sky-800 text-xs py-0.5"><div class="font-bold flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-sky-600 animate-ping"></span> Querying Lakehouse Agent...</div><div class="text-[10px] text-slate-500 mt-0.5">Routing to Databricks Genie AI (typically 10-15s)</div></div>';
             feed.appendChild(loadMsg);
             feed.scrollTop = feed.scrollHeight;
 
@@ -250,9 +254,18 @@ HTML_INTERFACE = """<!DOCTYPE html>
             return false;
         };
 
-        // Quick chip buttons call this — passes question text directly
-        window.sendQuickQuery = function(queryText) {
+        // Quick chip buttons call this — passes question text directly with visual click feedback
+        window.sendQuickQuery = function(queryText, btnEl) {
             window.toggleChat(true);
+            if (btnEl) {
+                var origText = btnEl.innerText;
+                btnEl.innerText = '⏳ Querying...';
+                btnEl.classList.add('bg-sky-600', 'text-white');
+                setTimeout(function() {
+                    btnEl.innerText = origText;
+                    btnEl.classList.remove('bg-sky-600', 'text-white');
+                }, 3000);
+            }
             window._submitQuestion(queryText);
         };
     </script>
@@ -533,16 +546,16 @@ HTML_INTERFACE = """<!DOCTYPE html>
 
         <!-- Quick Question Chips inside Widget -->
         <div class="px-4 py-2 border-t border-slate-200 bg-white flex flex-wrap gap-1.5 text-[11px]">
-            <button onclick="window.sendQuickQuery('Which property had the highest total audience in the most recent monthly period?')" class="bg-slate-100 hover:bg-slate-200 text-sky-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium cursor-pointer">
+            <button type="button" onclick="window.sendQuickQuery('Which property had the highest total audience in the most recent monthly period?', this)" class="bg-slate-100 hover:bg-slate-200 active:scale-95 text-sky-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium cursor-pointer transition-all">
                 📊 Top Audience
             </button>
-            <button onclick="window.sendQuickQuery('Which campaign had the highest total spend?')" class="bg-slate-100 hover:bg-slate-200 text-purple-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium cursor-pointer">
+            <button type="button" onclick="window.sendQuickQuery('Which campaign had the highest total spend?', this)" class="bg-slate-100 hover:bg-slate-200 active:scale-95 text-purple-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium cursor-pointer transition-all">
                 ⏱️ Highest Spend
             </button>
-            <button onclick="window.sendQuickQuery('What is the average session duration by region?')" class="bg-slate-100 hover:bg-slate-200 text-emerald-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium cursor-pointer">
+            <button type="button" onclick="window.sendQuickQuery('What is the average session duration by region?', this)" class="bg-slate-100 hover:bg-slate-200 active:scale-95 text-emerald-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium cursor-pointer transition-all">
                 📱 Regional Duration
             </button>
-            <button onclick="window.sendQuickQuery('Which content title has the highest average watch time?')" class="bg-slate-100 hover:bg-slate-200 text-amber-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium cursor-pointer">
+            <button type="button" onclick="window.sendQuickQuery('Which content title has the highest average watch time?', this)" class="bg-slate-100 hover:bg-slate-200 active:scale-95 text-amber-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium cursor-pointer transition-all">
                 💰 Content Watch Time
             </button>
         </div>
@@ -581,7 +594,14 @@ def health():
 @app.get("/", response_class=HTMLResponse)
 def index():
     """Serves official Tenetic Light Theme corporate portal with floating AI Assistant."""
-    return HTML_INTERFACE
+    return HTMLResponse(
+        content=HTML_INTERFACE,
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        },
+    )
 
 
 @app.post("/ask", response_model=AskResponse)
