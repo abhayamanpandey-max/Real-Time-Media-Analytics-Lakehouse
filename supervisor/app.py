@@ -1,22 +1,20 @@
 """
 supervisor/app.py
 
-FastAPI Application for the Standalone Supervisor Service.
-
-Exposes:
-  - POST /ask : Endpoint routing questions to Databricks Genie agents via MCP.
-  - GET /health : Public healthcheck endpoint.
-  - GET / : Minimal single-page HTML chat interface (vanilla HTML/JS).
+Multi-Agent Supervisor Gateway Application (FastAPI).
+Routes natural language questions to domain-specific Databricks Genie Agents via MCP or REST API.
+Serves official Tenetic Light Theme corporate portal with floating AI Assistant chatbot.
 """
 
 import logging
 import os
-from typing import Dict, Optional
+from typing import Optional
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from supervisor.genie_client import ask_genie
 from supervisor.router import route_question
@@ -24,123 +22,43 @@ from supervisor.router import route_question
 # Load environment variables
 load_dotenv()
 
-logging.basicConfig(level=logging.INFO)
+DATABRICKS_HOST = os.getenv("DATABRICKS_HOST", "dbc-aa73f553-354d.cloud.databricks.com")
+DATABRICKS_TOKEN = os.getenv("DATABRICKS_TOKEN", "")
+
+GENIE_SPACE_IDS = {
+    "audience_reach": os.getenv("GENIE_SPACE_AUDIENCE_REACH", "01f1a1fd42bf12c9b418f72e196ce123"),
+    "ad_performance": os.getenv("GENIE_SPACE_AD_PERFORMANCE", "01f1a6065b871342b326e101c2469fb2"),
+    "demographics": os.getenv("GENIE_SPACE_DEMOGRAPHICS", "01f1a6061e7110a69b5c9b4d3ccc16b4"),
+    "monetization": os.getenv("GENIE_SPACE_MONETIZATION", "01f1a605b30a1a06ae28b8f2fc484f56"),
+}
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger("supervisor.app")
 
 app = FastAPI(
-    title="Media Analytics Genie Supervisor",
-    description="Multi-agent supervisor service routing NL questions to domain-specific Databricks Genie endpoints.",
+    title="Tenetic Media Analytics Supervisor Gateway",
+    description="Multi-agent AI gateway routing natural language queries to Databricks Genie spaces.",
     version="1.0.0",
 )
 
-# Configuration from environment with fallback defaults
-DATABRICKS_HOST = (
-    os.getenv("DATABRICKS_HOST")
-    or "dbc-aa73f553-354d.cloud.databricks.com"
-).strip()
-
-DATABRICKS_TOKEN = (
-    os.getenv("DATABRICKS_TOKEN")
-    or "4fb61313f73ef71f3cf8b18a26bb952facaf71ca6c1693d9787a6ee0e30fe4ae"
-).strip()
-
-DEFAULT_SPACE_ID = "01f1a1fd42bf12c9b418f72e196ce123"
-
-# Genie Space IDs mapping per domain with fallback defaults
-GENIE_SPACE_IDS: Dict[str, str] = {
-    "audience_reach": (
-        os.getenv("GENIE_SPACE_ID_AUDIENCE_REACH")
-        or os.getenv("GENIE_SPACE_ID_AUDIENCE")
-        or os.getenv("GENIE_SPACE_ID")
-        or "01f1a1fd42bf12c9b418f72e196ce123"
-    ).strip(),
-    "engagement": (
-        os.getenv("GENIE_SPACE_ID_ENGAGEMENT")
-        or "01f1a6065b871342b326e101c2469fb2"
-    ).strip(),
-    "composition": (
-        os.getenv("GENIE_SPACE_ID_COMPOSITION")
-        or "01f1a6061e7110a69b5c9b4d3ccc16b4"
-    ).strip(),
-    "monetization": (
-        os.getenv("GENIE_SPACE_ID_MONETIZATION")
-        or "01f1a605b30a1a06ae28b8f2fc484f56"
-    ).strip(),
-}
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 class AskRequest(BaseModel):
-    question: str
-    domain: Optional[str] = None
+    question: str = Field(..., description="Natural language analytics question string.")
+    domain: Optional[str] = Field(None, description="Optional explicit domain selector.")
 
 
 class AskResponse(BaseModel):
-    domain: str
-    answer: str
-
-
-@app.get("/health")
-def healthcheck():
-    """Public healthcheck endpoint."""
-    return {"status": "ok", "service": "supervisor"}
-
-
-@app.post("/ask", response_model=AskResponse)
-async def ask_endpoint(request: AskRequest):
-    """
-    Accepts natural language question, routes to domain agent, calls Databricks Genie via MCP.
-    """
-    question = request.question.strip() if request.question else ""
-    if not question:
-        raise HTTPException(status_code=400, detail="Question field cannot be empty.")
-
-    # 1. Route question to domain (or use target domain if explicitly passed)
-    if request.domain and request.domain in GENIE_SPACE_IDS:
-        domain = request.domain
-        logger.info(f"Using explicitly selected domain: '{domain}'")
-    else:
-        domain = route_question(question)
-        logger.info(f"Routed question '{question}' to domain: '{domain}'")
-
-    # 2. Get space ID for domain with fallback
-    space_id = (
-        GENIE_SPACE_IDS.get(domain)
-        or GENIE_SPACE_IDS.get("audience_reach")
-        or DEFAULT_SPACE_ID
-    )
-
-    host_url = (
-        os.getenv("DATABRICKS_HOST")
-        or DATABRICKS_HOST
-        or "dbc-aa73f553-354d.cloud.databricks.com"
-    ).strip()
-    
-    _p1 = "dapi"
-    _p2 = "ffb941ed0e1a0104"
-    _p3 = "f44a28304fa2a96b"
-    fallback_token = f"{_p1}{_p2}{_p3}"
-
-    raw_token = (os.getenv("DATABRICKS_TOKEN") or DATABRICKS_TOKEN or "").strip()
-    if not raw_token or (not raw_token.startswith("dapi") and raw_token != "test_token"):
-        token_str = fallback_token
-    else:
-        token_str = raw_token
-
-    # 3. Call Databricks Genie MCP endpoint
-    try:
-        answer = await ask_genie(
-            space_id=space_id,
-            question=question,
-            host=host_url,
-            token=token_str,
-        )
-        return AskResponse(domain=domain, answer=answer)
-    except Exception as exc:
-        logger.error(f"Error querying Genie agent for domain '{domain}': {exc}", exc_info=True)
-        raise HTTPException(
-            status_code=500,
-            detail=f"Supervisor failed to query domain '{domain}' Genie agent: {str(exc)}",
-        )
+    domain: str = Field(..., description="Routed domain identifier.")
+    question: str = Field(..., description="Original query asked.")
+    answer: str = Field(..., description="Executive response text with visual analytics.")
 
 
 HTML_INTERFACE = """<!DOCTYPE html>
@@ -401,7 +319,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
         </div>
     </section>
 
-    <!-- Company Leadership & Industry Pioneer Heritage -->
+    <!-- Company Leadership -->
     <section id="leadership" class="py-16 bg-slate-900 text-white px-6">
         <div class="max-w-6xl mx-auto">
             <div class="max-w-2xl mb-12">
@@ -425,32 +343,6 @@ HTML_INTERFACE = """<!DOCTYPE html>
                     <p class="text-xs text-slate-300 mt-3 leading-relaxed">
                         Veteran executive with an extensive leadership background in audience measurement and media analytics, leading Tenetic's mission to make consumer intelligence real-time and dynamic.
                     </p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Technology & Lakehouse Section -->
-    <section id="technology" class="py-16 px-6 max-w-6xl mx-auto">
-        <div class="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
-            <div class="max-w-2xl mb-8">
-                <h2 class="text-xs font-extrabold uppercase tracking-widest text-sky-600 mb-1">Architecture</h2>
-                <h3 class="text-2xl font-bold text-slate-900">Tenetics 6-Layer Delta Lake Engine</h3>
-                <p class="text-xs text-slate-600 mt-2">High-throughput streaming ingestion running on AWS EC2 with PySpark Data Quality rules and Databricks Genie AI.</p>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs">
-                <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
-                    <div class="font-bold text-sky-700 mb-1">🥉 Bronze Layer</div>
-                    <p class="text-slate-600 text-[11px]">Immutable append-only raw JSON telemetry ingestion landing zone.</p>
-                </div>
-                <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
-                    <div class="font-bold text-emerald-700 mb-1">🥈 Silver Layer</div>
-                    <p class="text-slate-600 text-[11px]">7 composable Data Quality rules with self-healing quarantine storage.</p>
-                </div>
-                <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
-                    <div class="font-bold text-purple-700 mb-1">🥇 Gold Layer</div>
-                    <p class="text-slate-600 text-[11px]">Star schema model with 5 dimension tables + central fact table.</p>
                 </div>
             </div>
         </div>
@@ -527,16 +419,16 @@ HTML_INTERFACE = """<!DOCTYPE html>
 
         <!-- Quick Question Chips inside Widget -->
         <div class="px-4 py-2 border-t border-slate-200 bg-white flex flex-wrap gap-1.5 text-[11px]">
-            <button onclick="sendQuickQuery('Which property had the highest total audience in the most recent monthly period?')" class="bg-slate-100 hover:bg-slate-200 text-sky-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium">
+            <button onclick="sendQuickQuery('Which property had the highest total audience in the most recent monthly period?')" class="bg-slate-100 hover:bg-slate-200 text-sky-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium cursor-pointer">
                 📊 Top Audience
             </button>
-            <button onclick="sendQuickQuery('Which campaign had the highest total spend?')" class="bg-slate-100 hover:bg-slate-200 text-purple-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium">
+            <button onclick="sendQuickQuery('Which campaign had the highest total spend?')" class="bg-slate-100 hover:bg-slate-200 text-purple-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium cursor-pointer">
                 ⏱️ Highest Spend
             </button>
-            <button onclick="sendQuickQuery('What is the average session duration by region?')" class="bg-slate-100 hover:bg-slate-200 text-emerald-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium">
+            <button onclick="sendQuickQuery('What is the average session duration by region?')" class="bg-slate-100 hover:bg-slate-200 text-emerald-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium cursor-pointer">
                 📱 Regional Duration
             </button>
-            <button onclick="sendQuickQuery('Which content title has the highest average watch time?')" class="bg-slate-100 hover:bg-slate-200 text-amber-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium">
+            <button onclick="sendQuickQuery('Which content title has the highest average watch time?')" class="bg-slate-100 hover:bg-slate-200 text-amber-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium cursor-pointer">
                 💰 Content Watch Time
             </button>
         </div>
@@ -554,7 +446,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
                 <button 
                     type="submit" 
                     id="widgetSendBtn" 
-                    class="absolute right-1.5 bg-sky-600 hover:bg-sky-700 text-white w-7 h-7 rounded-lg flex items-center justify-center transition-all font-bold text-xs"
+                    class="absolute right-1.5 bg-sky-600 hover:bg-sky-700 text-white w-7 h-7 rounded-lg flex items-center justify-center transition-all font-bold text-xs cursor-pointer"
                 >
                     ↑
                 </button>
@@ -563,66 +455,13 @@ HTML_INTERFACE = """<!DOCTYPE html>
     </div>
 
     <script>
-            const widget = document.getElementById('chatWidget');
-            if (!widget) return;
-
-            const isCurrentlyHidden = widget.style.display === 'none' || widget.classList.contains('hidden');
-
-            if (open === true || (open === undefined && isCurrentlyHidden)) {
-                widget.style.display = 'flex';
-                widget.classList.remove('hidden');
-                document.getElementById('widgetInput')?.focus();
-            } else {
-                widget.style.display = 'none';
-                widget.classList.add('hidden');
-            }
-        }
-
-        function toggleFullscreenChat() {
-            const widget = document.getElementById('chatWidget');
-            const btn = document.getElementById('fullscreenToggleBtn');
-            if (!widget) return;
-
-            isFullscreen = !isFullscreen;
-
-            if (isFullscreen) {
-                widget.style.position = 'fixed';
-                widget.style.top = '0';
-                widget.style.left = '0';
-                widget.style.right = '0';
-                widget.style.bottom = '0';
-                widget.style.width = '100vw';
-                widget.style.height = '100vh';
-                widget.style.maxWidth = '100vw';
-                widget.style.maxHeight = '100vh';
-                widget.style.borderRadius = '0px';
-                widget.style.zIndex = '99999';
-                if (btn) {
-                    btn.innerHTML = '🗗';
-                    btn.title = 'Restore Window';
-                }
-            } else {
-                widget.style.position = 'fixed';
-                widget.style.top = 'auto';
-                widget.style.left = 'auto';
-                widget.style.right = '1.25rem';
-                widget.style.bottom = '5rem';
-                widget.style.width = '100%';
-                widget.style.maxWidth = '28rem';
-                widget.style.height = '520px';
-                widget.style.borderRadius = '1.5rem';
-                widget.style.zIndex = '9999';
-                if (btn) {
-                    btn.innerHTML = '⛶';
-                    btn.title = 'Maximize Fullscreen';
-                }
-            }
-        }
-
         function sendQuickQuery(queryText) {
-            toggleChat(true);
-            document.getElementById('widgetInput').value = queryText;
-            handleChatSubmit(new Event('submit'));
+            window.toggleChat(true);
+            const input = document.getElementById('widgetInput');
+            if (input) {
+                input.value = queryText;
+                handleChatSubmit(new Event('submit'));
+            }
         }
 
         function generateDynamicComparisonChart(cleanText) {
@@ -673,19 +512,14 @@ HTML_INTERFACE = """<!DOCTYPE html>
         }
 
         function formatBusinessAnswer(rawAnswer) {
-            // 1. Remove raw SQL code blocks and Generated SQL query headers
             let clean = rawAnswer.replace(/```sql[\s\S]*?```/gi, '').replace(/\*\*Generated SQL Query:\*\*/gi, '').trim();
-            
-            // 2. Parse Markdown
             let html = typeof marked !== 'undefined' ? marked.parse(clean) : clean;
             
-            // 3. Try multi-item dynamic comparison chart first
             let chartHtml = generateDynamicComparisonChart(clean);
             if (chartHtml) {
                 return html + chartHtml;
             }
 
-            // 4. Fallback single-item metric cards if only 1 metric present
             let visualWidget = '';
             if (clean.includes('1,192,842,191') || clean.includes('Media Gamma')) {
                 visualWidget = `
@@ -748,14 +582,14 @@ HTML_INTERFACE = """<!DOCTYPE html>
         }
 
         async function handleChatSubmit(e) {
-            e.preventDefault();
+            if (e && e.preventDefault) e.preventDefault();
             const input = document.getElementById('widgetInput');
             const feed = document.getElementById('chatFeed');
             const btn = document.getElementById('widgetSendBtn');
+            if (!input || !feed) return;
             const question = input.value.trim();
             if (!question) return;
 
-            // User Message Bubble
             const userMsg = document.createElement('div');
             userMsg.className = 'flex justify-end';
             userMsg.innerHTML = `
@@ -765,9 +599,8 @@ HTML_INTERFACE = """<!DOCTYPE html>
             `;
             feed.appendChild(userMsg);
             input.value = '';
-            btn.disabled = true;
+            if (btn) btn.disabled = true;
 
-            // Loading Indicator
             const loadId = 'load-' + Date.now();
             const loadMsg = document.createElement('div');
             loadMsg.id = loadId;
@@ -817,7 +650,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
                 errDiv.innerText = `⚠️ Connection error: ${err.message}`;
                 feed.appendChild(errDiv);
             } finally {
-                btn.disabled = false;
+                if (btn) btn.disabled = false;
                 feed.scrollTop = feed.scrollHeight;
             }
         }
@@ -831,11 +664,51 @@ HTML_INTERFACE = """<!DOCTYPE html>
 """
 
 
-
+@app.get("/health")
+def health():
+    """Health check endpoint."""
+    return {"status": "ok", "service": "supervisor"}
 
 
 @app.get("/", response_class=HTMLResponse)
 def index():
-    """Serves minimal single-page HTML chat interface."""
-    return HTMLResponse(content=HTML_INTERFACE, status_code=200)
+    """Serves official Tenetic Light Theme corporate portal with floating AI Assistant."""
+    return HTML_INTERFACE
 
+
+@app.post("/ask", response_model=AskResponse)
+async def ask(payload: AskRequest):
+    """
+    Routes question to domain Genie Agent and returns answer.
+    """
+    logger.info(f"Received /ask request for question: {payload.question}")
+
+    # Determine domain space
+    if payload.domain and payload.domain in GENIE_SPACE_IDS:
+        domain = payload.domain
+    else:
+        domain = route_question(payload.question)
+
+    space_id = GENIE_SPACE_IDS.get(domain)
+    if not space_id:
+        raise HTTPException(status_code=500, detail=f"No Genie Space ID configured for domain '{domain}'.")
+
+    logger.info(f"Routing question to domain '{domain}' (space_id: {space_id})")
+
+    try:
+        raw_answer = await ask_genie(
+            space_id=space_id,
+            question=payload.question,
+            host=DATABRICKS_HOST,
+            token=DATABRICKS_TOKEN,
+        )
+        return AskResponse(domain=domain, question=payload.question, answer=raw_answer)
+    except TimeoutError as exc:
+        logger.error(f"Genie query timeout for domain '{domain}': {exc}")
+        raise HTTPException(status_code=504, detail="Databricks Genie Agent query timed out. Please try again.")
+    except RuntimeError as exc:
+        logger.error(f"Genie query runtime error for domain '{domain}': {exc}")
+        raise HTTPException(status_code=502, detail=str(exc))
+    except Exception as exc:
+        logger.error(f"Unexpected error in /ask: {exc}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal supervisor gateway error: {str(exc)}")
