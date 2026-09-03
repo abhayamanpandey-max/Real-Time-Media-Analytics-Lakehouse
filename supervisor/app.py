@@ -170,9 +170,9 @@ HTML_INTERFACE = """<!DOCTYPE html>
                     '</div>';
             }
 
-            return '<div class="mt-3 p-3.5 bg-white border border-slate-200 rounded-xl text-xs shadow-sm">' +
+            return '<div class="p-3.5 bg-white border border-slate-200 rounded-xl text-xs shadow-sm">' +
                 '<div class="font-bold text-slate-900 mb-2 flex items-center justify-between">' +
-                '<span class="flex items-center gap-1.5">🍩 ' + (title || 'Share & Distribution Breakdown') + '</span>' +
+                '<span class="flex items-center gap-1.5">🍩 ' + (title || 'Distribution Breakdown') + '</span>' +
                 '<span class="text-[10px] text-sky-700 font-mono font-semibold">Pie Share</span>' +
                 '</div>' +
                 '<div class="flex items-center gap-3.5">' +
@@ -192,7 +192,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
             var pctDiff = itemB.val > 0 ? (((itemA.val - itemB.val) / itemB.val) * 100).toFixed(1) : 0;
             var isHigherA = itemA.val >= itemB.val;
 
-            return '<div class="mt-3 p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs shadow-sm">' +
+            return '<div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs shadow-sm">' +
                 '<div class="font-bold text-slate-900 mb-2.5 flex items-center justify-between">' +
                 '<span class="flex items-center gap-1.5">⚖️ Head-to-Head Comparison</span>' +
                 '<span class="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full font-bold">Δ ' + Math.abs(pctDiff) + '%</span>' +
@@ -237,12 +237,20 @@ HTML_INTERFACE = """<!DOCTYPE html>
                     '</div>';
             }).join('');
 
-            return '<div class="mt-3 p-3.5 bg-white border border-slate-200 rounded-xl text-xs shadow-sm">' +
+            return '<div class="p-3.5 bg-white border border-slate-200 rounded-xl text-xs shadow-sm">' +
                 '<div class="font-bold text-slate-900 mb-2.5 flex items-center justify-between">' +
-                '<span class="flex items-center gap-1.5">📊 ' + (title || 'Ranked Metric Comparison') + '</span>' +
+                '<span class="flex items-center gap-1.5">📊 ' + (title || 'Ranked Comparison') + '</span>' +
                 '<span class="text-[10px] text-sky-700 font-mono font-semibold">Real-Time Lakehouse</span>' +
                 '</div>' +
                 '<div class="space-y-2">' + barsHtml + '</div>' +
+                '</div>';
+        };
+
+        window.wrapSideBySide = function(textHtml, cardHtml) {
+            if (!cardHtml) return textHtml;
+            return '<div class="flex flex-col lg:flex-row gap-4 items-start justify-between w-full">' +
+                '<div class="flex-1 min-w-0 pr-1 leading-relaxed">' + textHtml + '</div>' +
+                '<div class="w-full lg:w-[320px] shrink-0">' + cardHtml + '</div>' +
                 '</div>';
         };
 
@@ -262,7 +270,8 @@ HTML_INTERFACE = """<!DOCTYPE html>
                 }
             }
             if (pieMatches.length >= 3) {
-                return html + window.renderPieChart(pieMatches, 'Distribution Breakdown');
+                var pieChart = window.renderPieChart(pieMatches, 'Distribution Breakdown');
+                return window.wrapSideBySide(html, pieChart);
             }
 
             // 2. Check for Key-Value Numerical Metrics
@@ -292,19 +301,23 @@ HTML_INTERFACE = """<!DOCTYPE html>
             }
 
             if (kvMatches.length === 2) {
-                return html + window.renderComparisonGraph(kvMatches);
+                var compGraph = window.renderComparisonGraph(kvMatches);
+                return window.wrapSideBySide(html, compGraph);
             } else if (kvMatches.length >= 3) {
-                return html + window.renderBarGraph(kvMatches, 'Ranked Analytics Comparison');
+                var barGraph = window.renderBarGraph(kvMatches, 'Ranked Comparison');
+                return window.wrapSideBySide(html, barGraph);
             }
 
             // Fallback Leader Cards for single-item responses
             var viz = '';
             if (clean.indexOf('1,192,842,191') !== -1 || clean.indexOf('Media Gamma') !== -1) {
-                viz = '<div class="mt-3 p-3.5 bg-sky-50 border border-sky-200 rounded-xl text-xs shadow-sm"><div class="font-bold text-sky-900 mb-1 flex items-center justify-between"><span>🏆 Top Property Audience Ranking</span><span class="font-mono text-sky-700">1.19 Billion Viewers</span></div><div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden mt-1.5"><div class="bg-sky-600 h-full rounded-full" style="width:100%"></div></div><div class="flex justify-between text-[10px] text-slate-600 mt-1 font-semibold"><span>Media Gamma (#1 Ranked)</span><span>1,192,842,191 Viewers</span></div></div>';
+                viz = '<div class="p-3.5 bg-sky-50 border border-sky-200 rounded-xl text-xs shadow-sm"><div class="font-bold text-sky-900 mb-1 flex items-center justify-between"><span>🏆 Top Property Audience</span><span class="font-mono text-sky-700">1.19B</span></div><div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden mt-1.5"><div class="bg-sky-600 h-full rounded-full" style="width:100%"></div></div><div class="flex justify-between text-[10px] text-slate-600 mt-1 font-semibold"><span>Media Gamma (#1 Ranked)</span><span>1,192,842,191</span></div></div>';
+                return window.wrapSideBySide(html, viz);
             } else if (clean.indexOf('camp_842') !== -1 || clean.indexOf('9.48') !== -1 || clean.indexOf('spend') !== -1) {
-                viz = '<div class="mt-3 p-3.5 bg-purple-50 border border-purple-200 rounded-xl text-xs shadow-sm"><div class="font-bold text-purple-900 mb-1 flex items-center justify-between"><span>⏱️ Campaign Ad Spend Leader</span><span class="font-mono text-purple-700">$9.48 USD</span></div><div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden mt-1.5"><div class="bg-purple-600 h-full rounded-full" style="width:85%"></div></div><div class="flex justify-between text-[10px] text-slate-600 mt-1 font-semibold"><span>Campaign camp_842</span><span>Highest Campaign Spend</span></div></div>';
+                viz = '<div class="p-3.5 bg-purple-50 border border-purple-200 rounded-xl text-xs shadow-sm"><div class="font-bold text-purple-900 mb-1 flex items-center justify-between"><span>⏱️ Top Campaign Spend</span><span class="font-mono text-purple-700">$9.48 USD</span></div><div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden mt-1.5"><div class="bg-purple-600 h-full rounded-full" style="width:85%"></div></div><div class="flex justify-between text-[10px] text-slate-600 mt-1 font-semibold"><span>Campaign camp_842</span><span>Highest Spend</span></div></div>';
+                return window.wrapSideBySide(html, viz);
             }
-            return html + viz;
+            return html;
         };
 
         // Core submit logic — receives question text directly
@@ -668,20 +681,20 @@ HTML_INTERFACE = """<!DOCTYPE html>
 
         <!-- Quick Question Chips inside Widget -->
         <div class="px-4 py-2 border-t border-slate-200 bg-white flex flex-wrap gap-1.5 text-[11px]">
-            <button type="button" onclick="window.sendQuickQuery('Which property had the highest total audience in the most recent monthly period?', this)" class="bg-slate-100 hover:bg-slate-200 active:scale-95 text-sky-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium cursor-pointer transition-all">
-                📊 Top Audience
+            <button type="button" onclick="window.sendQuickQuery('What are the top 5 properties by audience share in the US?', this)" class="bg-slate-100 hover:bg-slate-200 active:scale-95 text-sky-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium cursor-pointer transition-all">
+                📊 Top Properties
             </button>
             <button type="button" onclick="window.sendQuickQuery('What is the audience profile breakdown by platform?', this)" class="bg-slate-100 hover:bg-slate-200 active:scale-95 text-indigo-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium cursor-pointer transition-all">
                 🍩 Platform Share
             </button>
-            <button type="button" onclick="window.sendQuickQuery('What is the average session duration by region?', this)" class="bg-slate-100 hover:bg-slate-200 active:scale-95 text-emerald-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium cursor-pointer transition-all">
-                📱 Regional Duration
-            </button>
             <button type="button" onclick="window.sendQuickQuery('Show top 5 content titles by total watch time in seconds', this)" class="bg-slate-100 hover:bg-slate-200 active:scale-95 text-amber-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium cursor-pointer transition-all">
                 💰 Content Watch Time
             </button>
-            <button type="button" onclick="window.sendQuickQuery('Which campaign had the highest total spend?', this)" class="bg-slate-100 hover:bg-slate-200 active:scale-95 text-purple-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium cursor-pointer transition-all">
-                ⏱️ Highest Spend
+            <button type="button" onclick="window.sendQuickQuery('Show top ad categories by audience', this)" class="bg-slate-100 hover:bg-slate-200 active:scale-95 text-emerald-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium cursor-pointer transition-all">
+                📱 Top Ad Brands
+            </button>
+            <button type="button" onclick="window.sendQuickQuery('Which property had the highest total audience in the most recent monthly period?', this)" class="bg-slate-100 hover:bg-slate-200 active:scale-95 text-purple-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium cursor-pointer transition-all">
+                🏆 #1 Audience Leader
             </button>
         </div>
 

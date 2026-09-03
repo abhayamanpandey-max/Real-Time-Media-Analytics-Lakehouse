@@ -17,58 +17,6 @@ DEFAULT_DOMAIN = "audience_reach"
 
 # Configurable keyword dictionary mapping domain keys to lowercase keywords/phrases.
 DOMAIN_KEYWORDS: Dict[str, List[str]] = {
-    "monetization": [
-        "revenue",
-        "cpm",
-        "arpu",
-        "ad",
-        "ads",
-        "yield",
-        "fill rate",
-        "subscription",
-        "monetize",
-        "monetization",
-        "billing",
-        "payout",
-        "cost",
-        "dollar",
-        "earnings",
-        "watch time",
-        "watch",
-        "content title",
-        "content titles",
-        "content",
-        "titles",
-    ],
-    "composition": [
-        "composition",
-        "demographic",
-        "demographics",
-        "profile",
-        "overlap",
-        "platform",
-        "desktop",
-        "mobile",
-        "smart tv",
-        "connected tv",
-        "ctv",
-        "device",
-        "region",
-    ],
-    "engagement": [
-        "engagement",
-        "duration",
-        "watch time",
-        "completion",
-        "completion rate",
-        "session",
-        "retention",
-        "bounce",
-        "time spent",
-        "frequency",
-        "active time",
-        "view duration",
-    ],
     "audience_reach": [
         "audience",
         "reach",
@@ -77,25 +25,99 @@ DOMAIN_KEYWORDS: Dict[str, List[str]] = {
         "ranking",
         "rankings",
         "top properties",
+        "properties",
+        "property",
         "audience share",
         "share",
         "listeners",
         "traffic",
         "uniques",
         "views",
+        "platform",
+        "platforms",
+        "profile",
+        "breakdown",
+        "desktop",
+        "mobile",
+        "smart tv",
+        "connected tv",
+        "ctv",
+        "overlap",
+        "index",
+    ],
+    "ad_performance": [
+        "ad categories",
+        "ad category",
+        "ad performance",
+        "brand",
+        "brands",
+        "ad",
+        "ads",
+        "spend",
+        "campaign",
+        "campaigns",
+        "advertiser",
+        "advertisers",
+        "cpm",
+        "yield",
+        "fill rate",
+        "cost",
+        "dollar",
+    ],
+    "engagement": [
+        "watch time",
+        "watch",
+        "content title",
+        "content titles",
+        "content",
+        "titles",
+        "seconds",
+        "engagement",
+        "duration",
+        "completion",
+        "completion rate",
+        "session",
+        "retention",
+        "bounce",
+        "time spent",
+        "active time",
+        "view duration",
+    ],
+    "composition": [
+        "demographic",
+        "demographics",
+        "age",
+        "gender",
+        "male",
+        "female",
+        "composition",
+    ],
+    "monetization": [
+        "revenue",
+        "arpu",
+        "subscription",
+        "monetize",
+        "monetization",
+        "billing",
+        "payout",
+        "earnings",
     ],
 }
 
 
+# Generic words get weight 1; domain-specific terms get weight 2
+GENERIC_WORDS = {"audience", "reach", "viewers", "views", "share", "ad", "ads"}
+
+
 def route_question(question: str) -> str:
     """
-    Routes an input question to one of the 4 domain keys based on word-boundary keyword matching.
+    Routes an input question to one of the 4 domain keys based on weighted keyword matching.
 
     Args:
         question: Natural language question string.
 
     Returns:
-        Domain key: 'audience_reach', 'engagement', 'composition', or 'monetization'.
+        Domain key: 'audience_reach', 'engagement', 'composition', or 'ad_performance'.
     """
     if not question or not isinstance(question, str):
         return DEFAULT_DOMAIN
@@ -107,7 +129,8 @@ def route_question(question: str) -> str:
         for kw in keywords:
             pattern = r"\b" + re.escape(kw.lower()) + r"\b"
             if re.search(pattern, q_lower):
-                scores[domain] += 1
+                weight = 1 if kw in GENERIC_WORDS else 2
+                scores[domain] += weight
 
     max_score = max(scores.values())
     if max_score > 0:
