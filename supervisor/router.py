@@ -33,6 +33,12 @@ DOMAIN_KEYWORDS: Dict[str, List[str]] = {
         "cost",
         "dollar",
         "earnings",
+        "watch time",
+        "watch",
+        "content title",
+        "content titles",
+        "content",
+        "titles",
     ],
     "composition": [
         "composition",
