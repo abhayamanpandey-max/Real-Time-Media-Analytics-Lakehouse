@@ -422,7 +422,8 @@ HTML_INTERFACE = """<!DOCTYPE html>
     <!-- Official Tenetic Floating AI Chatbot Window -->
     <div 
         id="chatWidget" 
-        class="fixed bottom-20 right-5 z-50 w-full max-w-md bg-white border border-slate-300 rounded-3xl shadow-2xl flex flex-col h-[520px] hidden overflow-hidden transition-all"
+        style="display: none; position: fixed; bottom: 5rem; right: 1.25rem; width: 100%; max-width: 28rem; height: 520px; z-index: 9999;"
+        class="bg-white border border-slate-300 rounded-3xl shadow-2xl flex flex-col overflow-hidden transition-all"
     >
         <!-- Chat Widget Header with Fullscreen and Close controls -->
         <div class="bg-slate-900 border-b border-slate-800 p-4 flex items-center justify-between shrink-0 text-white">
@@ -436,10 +437,10 @@ HTML_INTERFACE = """<!DOCTYPE html>
                 </div>
             </div>
             <div class="flex items-center gap-1.5">
-                <button onclick="toggleFullscreenChat()" id="fullscreenToggleBtn" title="Toggle Fullscreen" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center text-xs transition-colors font-mono">
+                <button onclick="toggleFullscreenChat()" id="fullscreenToggleBtn" title="Maximize Fullscreen" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center text-xs transition-colors font-mono border border-slate-700">
                     ⛶
                 </button>
-                <button onclick="toggleChat(false)" title="Close Chat" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-xs transition-colors">
+                <button onclick="toggleChat(false)" title="Close Chat" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-xs transition-colors border border-slate-700">
                     ✕
                 </button>
             </div>
@@ -494,34 +495,58 @@ HTML_INTERFACE = """<!DOCTYPE html>
 
         function toggleChat(open) {
             const widget = document.getElementById('chatWidget');
-            if (open === undefined) {
-                widget.classList.toggle('hidden');
-            } else if (open) {
-                widget.classList.remove('hidden');
-            } else {
-                widget.classList.add('hidden');
-            }
+            if (!widget) return;
 
-            if (!widget.classList.contains('hidden')) {
-                document.getElementById('widgetInput').focus();
+            const isCurrentlyHidden = widget.style.display === 'none' || widget.classList.contains('hidden');
+
+            if (open === true || (open === undefined && isCurrentlyHidden)) {
+                widget.style.display = 'flex';
+                widget.classList.remove('hidden');
+                document.getElementById('widgetInput')?.focus();
+            } else {
+                widget.style.display = 'none';
+                widget.classList.add('hidden');
             }
         }
 
         function toggleFullscreenChat() {
             const widget = document.getElementById('chatWidget');
             const btn = document.getElementById('fullscreenToggleBtn');
+            if (!widget) return;
+
             isFullscreen = !isFullscreen;
 
             if (isFullscreen) {
-                widget.classList.remove('bottom-20', 'right-5', 'w-full', 'max-w-md', 'h-[520px]', 'rounded-3xl');
-                widget.classList.add('inset-0', 'w-screen', 'h-screen', 'rounded-none', 'max-w-none', 'z-50', 'fixed');
-                btn.innerHTML = '🗗';
-                btn.title = 'Restore Window';
+                widget.style.position = 'fixed';
+                widget.style.top = '0';
+                widget.style.left = '0';
+                widget.style.right = '0';
+                widget.style.bottom = '0';
+                widget.style.width = '100vw';
+                widget.style.height = '100vh';
+                widget.style.maxWidth = '100vw';
+                widget.style.maxHeight = '100vh';
+                widget.style.borderRadius = '0px';
+                widget.style.zIndex = '99999';
+                if (btn) {
+                    btn.innerHTML = '🗗';
+                    btn.title = 'Restore Window';
+                }
             } else {
-                widget.classList.remove('inset-0', 'w-screen', 'h-screen', 'rounded-none', 'max-w-none', 'z-50', 'fixed');
-                widget.classList.add('bottom-20', 'right-5', 'w-full', 'max-w-md', 'h-[520px]', 'rounded-3xl', 'fixed');
-                btn.innerHTML = '⛶';
-                btn.title = 'Maximize Fullscreen';
+                widget.style.position = 'fixed';
+                widget.style.top = 'auto';
+                widget.style.left = 'auto';
+                widget.style.right = '1.25rem';
+                widget.style.bottom = '5rem';
+                widget.style.width = '100%';
+                widget.style.maxWidth = '28rem';
+                widget.style.height = '520px';
+                widget.style.borderRadius = '1.5rem';
+                widget.style.zIndex = '9999';
+                if (btn) {
+                    btn.innerHTML = '⛶';
+                    btn.title = 'Maximize Fullscreen';
+                }
             }
         }
 
