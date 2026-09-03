@@ -80,279 +80,21 @@ HTML_INTERFACE = """<!DOCTYPE html>
         .markdown-body ul { list-style-type: disc; margin-left: 1.25rem; margin-bottom: 0.5rem; }
         .markdown-body ol { list-style-type: decimal; margin-left: 1.25rem; margin-bottom: 0.5rem; }
         .markdown-body code { background-color: #e2e8f0; color: #be123c; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.85em; }
-        .markdown-body pre { background-color: #0f172a; color: #f8fafc; padding: 0.75rem; border-radius: 8px; overflow-x: auto; margin-top: 0.5rem; margin-bottom: 0.5rem; }
-        .markdown-body pre code { background: none; color: #38bdf8; padding: 0; }
+
+        .chat-fullscreen {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: 100vw !important;
+            max-height: 100vh !important;
+            border-radius: 0px !important;
+            z-index: 999999 !important;
+        }
     </style>
-
-    <script>
-        window.isFullscreenMode = false;
-
-        window.toggleChat = function(open) {
-            const widget = document.getElementById('chatWidget');
-            if (!widget) return;
-
-            if (open === true || open === 1) {
-                widget.style.display = 'flex';
-            } else if (open === false || open === 0) {
-                widget.style.display = 'none';
-            } else {
-                if (widget.style.display === 'none' || widget.style.display === '') {
-                    widget.style.display = 'flex';
-                } else {
-                    widget.style.display = 'none';
-                }
-            }
-
-            if (widget.style.display === 'flex') {
-                setTimeout(() => {
-                    document.getElementById('widgetInput')?.focus();
-                }, 100);
-            }
-        };
-
-        window.toggleFullscreenChat = function() {
-            const widget = document.getElementById('chatWidget');
-            const btnText = document.getElementById('fullscreenBtnText');
-            if (!widget) return;
-
-            window.isFullscreenMode = !window.isFullscreenMode;
-
-            if (window.isFullscreenMode) {
-                widget.style.position = 'fixed';
-                widget.style.top = '0px';
-                widget.style.left = '0px';
-                widget.style.right = '0px';
-                widget.style.bottom = '0px';
-                widget.style.width = '100vw';
-                widget.style.height = '100vh';
-                widget.style.maxWidth = '100vw';
-                widget.style.maxHeight = '100vh';
-                widget.style.borderRadius = '0px';
-                widget.style.zIndex = '999999';
-                if (btnText) btnText.innerText = '🗗 Exit Fullscreen';
-            } else {
-                widget.style.position = 'fixed';
-                widget.style.top = 'auto';
-                widget.style.left = 'auto';
-                widget.style.right = '1.25rem';
-                widget.style.bottom = '5rem';
-                widget.style.width = '100%';
-                widget.style.maxWidth = '28rem';
-                widget.style.height = '520px';
-                widget.style.maxHeight = '520px';
-                widget.style.borderRadius = '1.5rem';
-                widget.style.zIndex = '9999';
-                if (btnText) btnText.innerText = '⛶ Fullscreen';
-            }
-        };
-
-        window.escapeHtml = function(str) {
-            if (!str) return '';
-            return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-        };
-
-        window.generateDynamicComparisonChart = function(cleanText) {
-            const items = [];
-            const regex = /[-*•]?\s*\*?\*?([^:\d\n]+?)\*?\*?:\s*\$?([\d,]+(?:\.\d+)?)/g;
-            let match;
-
-            while ((match = regex.exec(cleanText)) !== null) {
-                const label = match[1].replace(/[*_]/g, '').trim();
-                const numStr = match[2].replace(/,/g, '');
-                const val = parseFloat(numStr);
-                if (!isNaN(val) && label.length >= 2 && label.length <= 40 && val > 0) {
-                    items.push({ label, val, raw: match[2] });
-                }
-            }
-
-            if (items.length >= 2) {
-                const maxVal = Math.max(...items.map(i => i.val));
-                const colors = ['bg-sky-600', 'bg-indigo-600', 'bg-purple-600', 'bg-emerald-600', 'bg-amber-600'];
-                
-                let barsHtml = items.slice(0, 5).map((item, idx) => {
-                    const pct = Math.round((item.val / maxVal) * 100);
-                    const color = colors[idx % colors.length];
-                    return `
-                    <div>
-                        <div class="flex justify-between text-[11px] font-semibold text-slate-700 mb-0.5">
-                            <span>${idx + 1}. ${window.escapeHtml(item.label)}</span>
-                            <span class="font-mono text-sky-800">${item.raw}</span>
-                        </div>
-                        <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
-                            <div class="${color} h-full rounded-full transition-all duration-500" style="width: ${pct}%"></div>
-                        </div>
-                    </div>`;
-                }).join('');
-
-                return `
-                <div class="mt-3 p-3.5 bg-slate-100 border border-slate-300 rounded-xl text-xs shadow-sm">
-                    <div class="font-bold text-slate-900 mb-2 flex items-center justify-between">
-                        <span>📊 Top Record Analytics Comparison (${items.length} Properties)</span>
-                        <span class="text-[10px] text-sky-700 font-mono font-semibold">Real-Time Lakehouse</span>
-                    </div>
-                    <div class="space-y-2.5">
-                        ${barsHtml}
-                    </div>
-                </div>`;
-            }
-            return '';
-        };
-
-        window.formatBusinessAnswer = function(rawAnswer) {
-            let clean = rawAnswer.replace(/```sql[\s\S]*?```/gi, '').replace(/\*\*Generated SQL Query:\*\*/gi, '').trim();
-            let html = typeof marked !== 'undefined' ? marked.parse(clean) : clean;
-            
-            let chartHtml = window.generateDynamicComparisonChart(clean);
-            if (chartHtml) {
-                return html + chartHtml;
-            }
-
-            let visualWidget = '';
-            if (clean.includes('1,192,842,191') || clean.includes('Media Gamma')) {
-                visualWidget = `
-                <div class="mt-3 p-3.5 bg-sky-50 border border-sky-200 rounded-xl text-xs shadow-sm">
-                    <div class="font-bold text-sky-900 mb-1 flex items-center justify-between">
-                        <span>🏆 Top Property Audience Ranking</span>
-                        <span class="font-mono text-sky-700">1.19 Billion Viewers</span>
-                    </div>
-                    <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden mt-1.5">
-                        <div class="bg-sky-600 h-full rounded-full" style="width: 100%"></div>
-                    </div>
-                    <div class="flex justify-between text-[10px] text-slate-600 mt-1 font-semibold">
-                        <span>Media Gamma (#1 Ranked)</span>
-                        <span>1,192,842,191 Viewers</span>
-                    </div>
-                </div>`;
-            } else if (clean.includes('camp_842') || clean.includes('9.48') || clean.includes('ad revenue') || clean.includes('spend')) {
-                visualWidget = `
-                <div class="mt-3 p-3.5 bg-purple-50 border border-purple-200 rounded-xl text-xs shadow-sm">
-                    <div class="font-bold text-purple-900 mb-1 flex items-center justify-between">
-                        <span>⏱️ Campaign Ad Spend Leader</span>
-                        <span class="font-mono text-purple-700">$9.48 USD</span>
-                    </div>
-                    <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden mt-1.5">
-                        <div class="bg-purple-600 h-full rounded-full" style="width: 85%"></div>
-                    </div>
-                    <div class="flex justify-between text-[10px] text-slate-600 mt-1 font-semibold">
-                        <span>Campaign camp_842</span>
-                        <span>Highest Campaign Spend</span>
-                    </div>
-                </div>`;
-            } else if (clean.includes('4414') || clean.includes('3192') || clean.includes('session duration') || clean.includes('region')) {
-                visualWidget = `
-                <div class="mt-3 p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs shadow-sm">
-                    <div class="font-bold text-emerald-900 mb-2">📱 Regional Session Duration Comparison</div>
-                    <div class="space-y-2">
-                        <div>
-                            <div class="flex justify-between text-[11px] font-semibold text-slate-700">
-                                <span>🇺🇸 US Region</span>
-                                <span class="font-mono text-emerald-700">4,414.5s (Highest)</span>
-                            </div>
-                            <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden mt-1">
-                                <div class="bg-emerald-600 h-full rounded-full" style="width: 100%"></div>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="flex justify-between text-[11px] font-semibold text-slate-700">
-                                <span>🇬🇧 UK Region</span>
-                                <span class="font-mono text-slate-600">3,192.0s</span>
-                            </div>
-                            <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden mt-1">
-                                <div class="bg-slate-400 h-full rounded-full" style="width: 72%"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>`;
-            }
-
-            return html + visualWidget;
-        };
-
-        window.submitQuestion = async function(questionText) {
-            window.toggleChat(true);
-            const input = document.getElementById('widgetInput');
-            const feed = document.getElementById('chatFeed');
-            const btn = document.getElementById('widgetSendBtn');
-
-            const question = questionText || (input ? input.value.trim() : '');
-            if (!question || !feed) return;
-
-            if (input) input.value = '';
-            if (btn) btn.disabled = true;
-
-            // User Message Bubble
-            const userMsg = document.createElement('div');
-            userMsg.className = 'flex justify-end';
-            userMsg.innerHTML = `
-                <div class="bg-sky-600 text-white px-3.5 py-2.5 rounded-2xl rounded-tr-sm text-xs max-w-[85%] leading-relaxed shadow-sm">
-                    ${window.escapeHtml(question)}
-                </div>
-            `;
-            feed.appendChild(userMsg);
-
-            // Loading Indicator
-            const loadId = 'load-' + Date.now();
-            const loadMsg = document.createElement('div');
-            loadMsg.id = loadId;
-            loadMsg.className = 'flex items-start gap-2';
-            loadMsg.innerHTML = `
-                <div class="w-6 h-6 rounded-lg bg-sky-600 flex items-center justify-center text-white font-bold text-xs shrink-0">✦</div>
-                <div class="text-slate-500 text-xs italic py-1 flex items-center gap-1.5">
-                    <span class="w-1.5 h-1.5 rounded-full bg-sky-600 animate-ping"></span> Querying lakehouse...
-                </div>
-            `;
-            feed.appendChild(loadMsg);
-            feed.scrollTop = feed.scrollHeight;
-
-            try {
-                const resp = await fetch('/ask', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ question: question })
-                });
-                document.getElementById(loadId)?.remove();
-
-                if (resp.ok) {
-                    const data = await resp.json();
-                    const agentMsg = document.createElement('div');
-                    agentMsg.className = 'flex items-start gap-2.5';
-                    
-                    let formattedHtml = window.formatBusinessAnswer(data.answer);
-
-                    agentMsg.innerHTML = `
-                        <div class="w-6 h-6 rounded-lg bg-sky-600 flex items-center justify-center text-white font-bold text-xs shrink-0 mt-0.5">✦</div>
-                        <div class="markdown-body text-xs text-slate-800 leading-relaxed bg-white border border-slate-200 p-3.5 rounded-2xl rounded-tl-sm flex-1 shadow-sm">
-                            ${formattedHtml}
-                        </div>
-                    `;
-                    feed.appendChild(agentMsg);
-                } else {
-                    const err = await resp.json().catch(() => ({ detail: 'Service error' }));
-                    const errDiv = document.createElement('div');
-                    errDiv.className = 'bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl text-xs';
-                    errDiv.innerText = `⚠️ Error: ${err.detail || 'Service error'}`;
-                    feed.appendChild(errDiv);
-                }
-            } catch (err) {
-                document.getElementById(loadId)?.remove();
-                const errDiv = document.createElement('div');
-                errDiv.className = 'bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl text-xs';
-                errDiv.innerText = `⚠️ Connection error: ${err.message}`;
-                feed.appendChild(errDiv);
-            } finally {
-                if (btn) btn.disabled = false;
-                feed.scrollTop = feed.scrollHeight;
-            }
-        };
-
-        window.handleFormSubmit = function(e) {
-            if (e && e.preventDefault) e.preventDefault();
-            const input = document.getElementById('widgetInput');
-            if (input && input.value.trim()) {
-                window.submitQuestion(input.value.trim());
-            }
-        };
-    </script>
 </head>
 <body class="min-h-screen flex flex-col relative bg-slate-50 text-slate-900 selection:bg-sky-500 selection:text-white">
 
@@ -377,7 +119,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
         </nav>
 
         <div class="flex items-center gap-3">
-            <button onclick="window.toggleChat(true)" class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-md shadow-sky-600/20 transition-all flex items-center gap-2 cursor-pointer">
+            <button onclick="toggleChat(true)" class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-md shadow-sky-600/20 transition-all flex items-center gap-2 cursor-pointer">
                 <span>✦ Live AI Portal</span>
             </button>
         </div>
@@ -401,7 +143,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
             <a href="#telecasts" class="bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs px-7 py-4 rounded-xl shadow-lg shadow-sky-600/20 transition-all">
                 View Live Telecast Coverage
             </a>
-            <button onclick="window.toggleChat(true)" class="bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-bold text-xs px-7 py-4 rounded-xl shadow-sm transition-all cursor-pointer">
+            <button onclick="toggleChat(true)" class="bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-bold text-xs px-7 py-4 rounded-xl shadow-sm transition-all cursor-pointer">
                 ✦ Talk with Tenetic AI
             </button>
         </div>
@@ -576,7 +318,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
     <!-- Floating Official Tenetic AI Chatbot Trigger Button -->
     <div class="fixed bottom-5 right-5 z-50">
         <button 
-            onclick="window.toggleChat()" 
+            onclick="toggleChat()" 
             id="chatToggleBtn"
             class="bg-sky-600 hover:bg-sky-700 text-white font-bold px-5 py-3.5 rounded-full shadow-2xl shadow-sky-600/30 flex items-center gap-2.5 transition-all border border-sky-400/40 cursor-pointer"
         >
@@ -588,8 +330,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
     <!-- Official Tenetic Floating AI Chatbot Window -->
     <div 
         id="chatWidget" 
-        style="display: flex; position: fixed; bottom: 5rem; right: 1.25rem; width: 100%; max-width: 28rem; height: 520px; z-index: 9999;"
-        class="bg-white border border-slate-300 rounded-3xl shadow-2xl flex flex-col overflow-hidden transition-all"
+        class="fixed bottom-20 right-5 z-50 w-full max-w-md bg-white border border-slate-300 rounded-3xl shadow-2xl flex flex-col h-[520px] overflow-hidden transition-all hidden"
     >
         <!-- Chat Widget Header with Fullscreen and Close controls -->
         <div class="bg-slate-900 border-b border-slate-800 p-4 flex items-center justify-between shrink-0 text-white">
@@ -604,7 +345,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
             </div>
             <div class="flex items-center gap-2">
                 <button 
-                    onclick="window.toggleFullscreenChat()" 
+                    onclick="toggleFullscreenChat()" 
                     id="fullscreenToggleBtn" 
                     title="Maximize Fullscreen" 
                     class="px-2.5 py-1 rounded-lg bg-sky-700 hover:bg-sky-600 text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer border border-sky-500/50 shadow-sm"
@@ -612,7 +353,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
                     <span id="fullscreenBtnText">⛶ Fullscreen</span>
                 </button>
                 <button 
-                    onclick="window.toggleChat(false)" 
+                    onclick="toggleChat(false)" 
                     title="Close Chat" 
                     class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center text-xs transition-colors border border-slate-700 cursor-pointer"
                 >
@@ -630,23 +371,23 @@ HTML_INTERFACE = """<!DOCTYPE html>
 
         <!-- Quick Question Chips inside Widget -->
         <div class="px-4 py-2 border-t border-slate-200 bg-white flex flex-wrap gap-1.5 text-[11px]">
-            <button onclick="window.submitQuestion('Which property had the highest total audience in the most recent monthly period?')" class="bg-slate-100 hover:bg-slate-200 text-sky-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium cursor-pointer">
+            <button onclick="sendQuickQuery('Which property had the highest total audience in the most recent monthly period?')" class="bg-slate-100 hover:bg-slate-200 text-sky-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium cursor-pointer">
                 📊 Top Audience
             </button>
-            <button onclick="window.submitQuestion('Which campaign had the highest total spend?')" class="bg-slate-100 hover:bg-slate-200 text-purple-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium cursor-pointer">
+            <button onclick="sendQuickQuery('Which campaign had the highest total spend?')" class="bg-slate-100 hover:bg-slate-200 text-purple-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium cursor-pointer">
                 ⏱️ Highest Spend
             </button>
-            <button onclick="window.submitQuestion('What is the average session duration by region?')" class="bg-slate-100 hover:bg-slate-200 text-emerald-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium cursor-pointer">
+            <button onclick="sendQuickQuery('What is the average session duration by region?')" class="bg-slate-100 hover:bg-slate-200 text-emerald-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium cursor-pointer">
                 📱 Regional Duration
             </button>
-            <button onclick="window.submitQuestion('Which content title has the highest average watch time?')" class="bg-slate-100 hover:bg-slate-200 text-amber-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium cursor-pointer">
+            <button onclick="sendQuickQuery('Which content title has the highest average watch time?')" class="bg-slate-100 hover:bg-slate-200 text-amber-700 px-2.5 py-1 rounded-md border border-slate-200 font-medium cursor-pointer">
                 💰 Content Watch Time
             </button>
         </div>
 
         <!-- Floating Input Form -->
         <div class="p-3 border-t border-slate-200 bg-white shrink-0">
-            <form onsubmit="window.handleFormSubmit(event)" class="relative flex items-center">
+            <form onsubmit="handleChatSubmit(event)" class="relative flex items-center">
                 <input 
                     type="text" 
                     id="widgetInput" 
@@ -664,6 +405,243 @@ HTML_INTERFACE = """<!DOCTYPE html>
             </form>
         </div>
     </div>
+
+    <script>
+        function toggleChat(open) {
+            const widget = document.getElementById('chatWidget');
+            if (!widget) return;
+
+            if (open === undefined) {
+                widget.classList.toggle('hidden');
+            } else if (open) {
+                widget.classList.remove('hidden');
+            } else {
+                widget.classList.add('hidden');
+            }
+
+            if (!widget.classList.contains('hidden')) {
+                document.getElementById('widgetInput')?.focus();
+            }
+        }
+
+        function toggleFullscreenChat() {
+            const widget = document.getElementById('chatWidget');
+            const btnText = document.getElementById('fullscreenBtnText');
+            if (!widget) return;
+
+            widget.classList.toggle('chat-fullscreen');
+            if (btnText) {
+                btnText.innerText = widget.classList.contains('chat-fullscreen') ? '🗗 Restore' : '⛶ Fullscreen';
+            }
+        }
+
+        function sendQuickQuery(queryText) {
+            toggleChat(true);
+            const input = document.getElementById('widgetInput');
+            if (input) {
+                input.value = queryText;
+                handleChatSubmit(new Event('submit'));
+            }
+        }
+
+        function generateDynamicComparisonChart(cleanText) {
+            const items = [];
+            const regex = /[-*•]?\s*\*?\*?([^:\d\n]+?)\*?\*?:\s*\$?([\d,]+(?:\.\d+)?)/g;
+            let match;
+
+            while ((match = regex.exec(cleanText)) !== null) {
+                const label = match[1].replace(/[*_]/g, '').trim();
+                const numStr = match[2].replace(/,/g, '');
+                const val = parseFloat(numStr);
+                if (!isNaN(val) && label.length >= 2 && label.length <= 40 && val > 0) {
+                    items.push({ label, val, raw: match[2] });
+                }
+            }
+
+            if (items.length >= 2) {
+                const maxVal = Math.max(...items.map(i => i.val));
+                const colors = ['bg-sky-600', 'bg-indigo-600', 'bg-purple-600', 'bg-emerald-600', 'bg-amber-600'];
+                
+                let barsHtml = items.slice(0, 5).map((item, idx) => {
+                    const pct = Math.round((item.val / maxVal) * 100);
+                    const color = colors[idx % colors.length];
+                    return `
+                    <div>
+                        <div class="flex justify-between text-[11px] font-semibold text-slate-700 mb-0.5">
+                            <span>${idx + 1}. ${escapeHtml(item.label)}</span>
+                            <span class="font-mono text-sky-800">${item.raw}</span>
+                        </div>
+                        <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
+                            <div class="${color} h-full rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+                        </div>
+                    </div>`;
+                }).join('');
+
+                return `
+                <div class="mt-3 p-3.5 bg-slate-100 border border-slate-300 rounded-xl text-xs shadow-sm">
+                    <div class="font-bold text-slate-900 mb-2 flex items-center justify-between">
+                        <span>📊 Top Record Analytics Comparison (${items.length} Properties)</span>
+                        <span class="text-[10px] text-sky-700 font-mono font-semibold">Real-Time Lakehouse</span>
+                    </div>
+                    <div class="space-y-2.5">
+                        ${barsHtml}
+                    </div>
+                </div>`;
+            }
+            return '';
+        }
+
+        function formatBusinessAnswer(rawAnswer) {
+            let clean = rawAnswer.replace(/```sql[\s\S]*?```/gi, '').replace(/\*\*Generated SQL Query:\*\*/gi, '').trim();
+            let html = typeof marked !== 'undefined' ? marked.parse(clean) : clean;
+            
+            let chartHtml = generateDynamicComparisonChart(clean);
+            if (chartHtml) {
+                return html + chartHtml;
+            }
+
+            let visualWidget = '';
+            if (clean.includes('1,192,842,191') || clean.includes('Media Gamma')) {
+                visualWidget = `
+                <div class="mt-3 p-3.5 bg-sky-50 border border-sky-200 rounded-xl text-xs shadow-sm">
+                    <div class="font-bold text-sky-900 mb-1 flex items-center justify-between">
+                        <span>🏆 Top Property Audience Ranking</span>
+                        <span class="font-mono text-sky-700">1.19 Billion Viewers</span>
+                    </div>
+                    <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden mt-1.5">
+                        <div class="bg-sky-600 h-full rounded-full" style="width: 100%"></div>
+                    </div>
+                    <div class="flex justify-between text-[10px] text-slate-600 mt-1 font-semibold">
+                        <span>Media Gamma (#1 Ranked)</span>
+                        <span>1,192,842,191 Viewers</span>
+                    </div>
+                </div>`;
+            } else if (clean.includes('camp_842') || clean.includes('9.48') || clean.includes('ad revenue') || clean.includes('spend')) {
+                visualWidget = `
+                <div class="mt-3 p-3.5 bg-purple-50 border border-purple-200 rounded-xl text-xs shadow-sm">
+                    <div class="font-bold text-purple-900 mb-1 flex items-center justify-between">
+                        <span>⏱️ Campaign Ad Spend Leader</span>
+                        <span class="font-mono text-purple-700">$9.48 USD</span>
+                    </div>
+                    <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden mt-1.5">
+                        <div class="bg-purple-600 h-full rounded-full" style="width: 85%"></div>
+                    </div>
+                    <div class="flex justify-between text-[10px] text-slate-600 mt-1 font-semibold">
+                        <span>Campaign camp_842</span>
+                        <span>Highest Campaign Spend</span>
+                    </div>
+                </div>`;
+            } else if (clean.includes('4414') || clean.includes('3192') || clean.includes('session duration') || clean.includes('region')) {
+                visualWidget = `
+                <div class="mt-3 p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs shadow-sm">
+                    <div class="font-bold text-emerald-900 mb-2">📱 Regional Session Duration Comparison</div>
+                    <div class="space-y-2">
+                        <div>
+                            <div class="flex justify-between text-[11px] font-semibold text-slate-700">
+                                <span>🇺🇸 US Region</span>
+                                <span class="font-mono text-emerald-700">4,414.5s (Highest)</span>
+                            </div>
+                            <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden mt-1">
+                                <div class="bg-emerald-600 h-full rounded-full" style="width: 100%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[11px] font-semibold text-slate-700">
+                                <span>🇬🇧 UK Region</span>
+                                <span class="font-mono text-slate-600">3,192.0s</span>
+                            </div>
+                            <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden mt-1">
+                                <div class="bg-slate-400 h-full rounded-full" style="width: 72%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            }
+
+            return html + visualWidget;
+        }
+
+        async function handleChatSubmit(e) {
+            if (e && e.preventDefault) e.preventDefault();
+            const input = document.getElementById('widgetInput');
+            const feed = document.getElementById('chatFeed');
+            const btn = document.getElementById('widgetSendBtn');
+            if (!input || !feed) return;
+            const question = input.value.trim();
+            if (!question) return;
+
+            // User Message Bubble
+            const userMsg = document.createElement('div');
+            userMsg.className = 'flex justify-end';
+            userMsg.innerHTML = `
+                <div class="bg-sky-600 text-white px-3.5 py-2.5 rounded-2xl rounded-tr-sm text-xs max-w-[85%] leading-relaxed shadow-sm">
+                    ${escapeHtml(question)}
+                </div>
+            `;
+            feed.appendChild(userMsg);
+            input.value = '';
+            if (btn) btn.disabled = true;
+
+            // Loading Indicator
+            const loadId = 'load-' + Date.now();
+            const loadMsg = document.createElement('div');
+            loadMsg.id = loadId;
+            loadMsg.className = 'flex items-start gap-2';
+            loadMsg.innerHTML = `
+                <div class="w-6 h-6 rounded-lg bg-sky-600 flex items-center justify-center text-white font-bold text-xs shrink-0">✦</div>
+                <div class="text-slate-500 text-xs italic py-1 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-sky-600 animate-ping"></span> Querying lakehouse...
+                </div>
+            `;
+            feed.appendChild(loadMsg);
+            feed.scrollTop = feed.scrollHeight;
+
+            try {
+                const resp = await fetch('/ask', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question: question })
+                });
+                document.getElementById(loadId)?.remove();
+
+                if (resp.ok) {
+                    const data = await resp.json();
+                    const agentMsg = document.createElement('div');
+                    agentMsg.className = 'flex items-start gap-2.5';
+                    
+                    let formattedHtml = formatBusinessAnswer(data.answer);
+
+                    agentMsg.innerHTML = `
+                        <div class="w-6 h-6 rounded-lg bg-sky-600 flex items-center justify-center text-white font-bold text-xs shrink-0 mt-0.5">✦</div>
+                        <div class="markdown-body text-xs text-slate-800 leading-relaxed bg-white border border-slate-200 p-3.5 rounded-2xl rounded-tl-sm flex-1 shadow-sm">
+                            ${formattedHtml}
+                        </div>
+                    `;
+                    feed.appendChild(agentMsg);
+                } else {
+                    const err = await resp.json().catch(() => ({ detail: 'Service error' }));
+                    const errDiv = document.createElement('div');
+                    errDiv.className = 'bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl text-xs';
+                    errDiv.innerText = `⚠️ Error: ${err.detail || 'Service error'}`;
+                    feed.appendChild(errDiv);
+                }
+            } catch (err) {
+                document.getElementById(loadId)?.remove();
+                const errDiv = document.createElement('div');
+                errDiv.className = 'bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl text-xs';
+                errDiv.innerText = `⚠️ Connection error: ${err.message}`;
+                feed.appendChild(errDiv);
+            } finally {
+                if (btn) btn.disabled = false;
+                feed.scrollTop = feed.scrollHeight;
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+    </script>
 </body>
 </html>
 """
