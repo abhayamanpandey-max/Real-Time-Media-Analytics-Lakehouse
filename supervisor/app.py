@@ -98,7 +98,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
 
     <script>
         window.toggleChat = function(open) {
-            const widget = document.getElementById('chatWidget');
+            var widget = document.getElementById('chatWidget');
             if (!widget) return;
 
             if (open === true || open === 1) {
@@ -115,225 +115,140 @@ HTML_INTERFACE = """<!DOCTYPE html>
 
             if (widget.style.display === 'flex') {
                 setTimeout(function() {
-                    document.getElementById('widgetInput')?.focus();
+                    var inp = document.getElementById('widgetInput');
+                    if (inp) inp.focus();
                 }, 50);
             }
         };
 
         window.toggleFullscreenChat = function() {
-            const widget = document.getElementById('chatWidget');
-            const btnText = document.getElementById('fullscreenBtnText');
+            var widget = document.getElementById('chatWidget');
+            var btnText = document.getElementById('fullscreenBtnText');
             if (!widget) return;
-
             widget.classList.toggle('chat-fullscreen');
             if (btnText) {
-                btnText.innerText = widget.classList.contains('chat-fullscreen') ? '🗗 Restore' : '⛶ Fullscreen';
-            }
-        };
-
-        window.sendQuickQuery = function(queryText) {
-            window.toggleChat(true);
-            const input = document.getElementById('widgetInput');
-            if (input) {
-                input.value = queryText;
-                window.handleChatSubmit(new Event('submit'));
+                btnText.innerText = widget.classList.contains('chat-fullscreen') ? '\uD83D\uDDD7 Restore' : '\u29F6 Fullscreen';
             }
         };
 
         window.escapeHtml = function(str) {
             if (!str) return '';
-            return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         };
 
         window.generateDynamicComparisonChart = function(cleanText) {
-            const items = [];
-            const regex = /[-*•]?\s*\*?\*?([^:\d\n]+?)\*?\*?:\s*\$?([\d,]+(?:\.\d+)?)/g;
-            let match;
-
+            var items = [];
+            var regex = /[-*\u2022]?\s*\*?\*?([^:\d\n]+?)\*?\*?:\s*\$?([\d,]+(?:\.\d+)?)/g;
+            var match;
             while ((match = regex.exec(cleanText)) !== null) {
-                const label = match[1].replace(/[*_]/g, '').trim();
-                const numStr = match[2].replace(/,/g, '');
-                const val = parseFloat(numStr);
+                var label = match[1].replace(/[*_]/g, '').trim();
+                var numStr = match[2].replace(/,/g, '');
+                var val = parseFloat(numStr);
                 if (!isNaN(val) && label.length >= 2 && label.length <= 40 && val > 0) {
-                    items.push({ label, val, raw: match[2] });
+                    items.push({ label: label, val: val, raw: match[2] });
                 }
             }
-
             if (items.length >= 2) {
-                const maxVal = Math.max(...items.map(i => i.val));
-                const colors = ['bg-sky-600', 'bg-indigo-600', 'bg-purple-600', 'bg-emerald-600', 'bg-amber-600'];
-                
-                let barsHtml = items.slice(0, 5).map((item, idx) => {
-                    const pct = Math.round((item.val / maxVal) * 100);
-                    const color = colors[idx % colors.length];
-                    return `
-                    <div>
-                        <div class="flex justify-between text-[11px] font-semibold text-slate-700 mb-0.5">
-                            <span>${idx + 1}. ${window.escapeHtml(item.label)}</span>
-                            <span class="font-mono text-sky-800">${item.raw}</span>
-                        </div>
-                        <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
-                            <div class="${color} h-full rounded-full transition-all duration-500" style="width: ${pct}%"></div>
-                        </div>
-                    </div>`;
+                var maxVal = Math.max.apply(null, items.map(function(i) { return i.val; }));
+                var colors = ['bg-sky-600', 'bg-indigo-600', 'bg-purple-600', 'bg-emerald-600', 'bg-amber-600'];
+                var barsHtml = items.slice(0, 5).map(function(item, idx) {
+                    var pct = Math.round((item.val / maxVal) * 100);
+                    var color = colors[idx % colors.length];
+                    return '<div><div class="flex justify-between text-[11px] font-semibold text-slate-700 mb-0.5"><span>' + (idx+1) + '. ' + window.escapeHtml(item.label) + '</span><span class="font-mono text-sky-800">' + item.raw + '</span></div><div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden"><div class="' + color + ' h-full rounded-full" style="width:' + pct + '%"></div></div></div>';
                 }).join('');
-
-                return `
-                <div class="mt-3 p-3.5 bg-slate-100 border border-slate-300 rounded-xl text-xs shadow-sm">
-                    <div class="font-bold text-slate-900 mb-2 flex items-center justify-between">
-                        <span>📊 Top Record Analytics Comparison (${items.length} Properties)</span>
-                        <span class="text-[10px] text-sky-700 font-mono font-semibold">Real-Time Lakehouse</span>
-                    </div>
-                    <div class="space-y-2.5">
-                        ${barsHtml}
-                    </div>
-                </div>`;
+                return '<div class="mt-3 p-3.5 bg-slate-100 border border-slate-300 rounded-xl text-xs shadow-sm"><div class="font-bold text-slate-900 mb-2 flex items-center justify-between"><span>\uD83D\uDCCA Top Record Analytics Comparison (' + items.length + ' Properties)</span><span class="text-[10px] text-sky-700 font-mono font-semibold">Real-Time Lakehouse</span></div><div class="space-y-2.5">' + barsHtml + '</div></div>';
             }
             return '';
         };
 
         window.formatBusinessAnswer = function(rawAnswer) {
-            let clean = rawAnswer.replace(/```sql[\s\S]*?```/gi, '').replace(/\*\*Generated SQL Query:\*\*/gi, '').trim();
-            let html = typeof marked !== 'undefined' ? marked.parse(clean) : clean;
-            
-            let chartHtml = window.generateDynamicComparisonChart(clean);
-            if (chartHtml) {
-                return html + chartHtml;
+            var clean = rawAnswer.replace(/```sql[\s\S]*?```/gi, '').replace(/\*\*Generated SQL Query:\*\*/gi, '').trim();
+            var html = (typeof marked !== 'undefined') ? marked.parse(clean) : clean.replace(/\n/g, '<br>');
+            var chartHtml = window.generateDynamicComparisonChart(clean);
+            if (chartHtml) return html + chartHtml;
+            var viz = '';
+            if (clean.indexOf('1,192,842,191') !== -1 || clean.indexOf('Media Gamma') !== -1) {
+                viz = '<div class="mt-3 p-3.5 bg-sky-50 border border-sky-200 rounded-xl text-xs shadow-sm"><div class="font-bold text-sky-900 mb-1 flex items-center justify-between"><span>\uD83C\uDFC6 Top Property Audience Ranking</span><span class="font-mono text-sky-700">1.19 Billion Viewers</span></div><div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden mt-1.5"><div class="bg-sky-600 h-full rounded-full" style="width:100%"></div></div><div class="flex justify-between text-[10px] text-slate-600 mt-1 font-semibold"><span>Media Gamma (#1 Ranked)</span><span>1,192,842,191 Viewers</span></div></div>';
+            } else if (clean.indexOf('camp_842') !== -1 || clean.indexOf('9.48') !== -1 || clean.indexOf('spend') !== -1) {
+                viz = '<div class="mt-3 p-3.5 bg-purple-50 border border-purple-200 rounded-xl text-xs shadow-sm"><div class="font-bold text-purple-900 mb-1 flex items-center justify-between"><span>\u23F1\uFE0F Campaign Ad Spend Leader</span><span class="font-mono text-purple-700">$9.48 USD</span></div><div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden mt-1.5"><div class="bg-purple-600 h-full rounded-full" style="width:85%"></div></div><div class="flex justify-between text-[10px] text-slate-600 mt-1 font-semibold"><span>Campaign camp_842</span><span>Highest Campaign Spend</span></div></div>';
+            } else if (clean.indexOf('4414') !== -1 || clean.indexOf('3192') !== -1 || clean.indexOf('session duration') !== -1) {
+                viz = '<div class="mt-3 p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs shadow-sm"><div class="font-bold text-emerald-900 mb-2">\uD83D\uDCF1 Regional Session Duration Comparison</div><div class="space-y-2"><div><div class="flex justify-between text-[11px] font-semibold text-slate-700"><span>\uD83C\uDDFA\uD83C\uDDF8 US Region</span><span class="font-mono text-emerald-700">4,414.5s (Highest)</span></div><div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden mt-1"><div class="bg-emerald-600 h-full rounded-full" style="width:100%"></div></div></div><div><div class="flex justify-between text-[11px] font-semibold text-slate-700"><span>\uD83C\uDDEC\uD83C\uDDE7 UK Region</span><span class="font-mono text-slate-600">3,192.0s</span></div><div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden mt-1"><div class="bg-slate-400 h-full rounded-full" style="width:72%"></div></div></div></div></div>';
             }
-
-            let visualWidget = '';
-            if (clean.includes('1,192,842,191') || clean.includes('Media Gamma')) {
-                visualWidget = `
-                <div class="mt-3 p-3.5 bg-sky-50 border border-sky-200 rounded-xl text-xs shadow-sm">
-                    <div class="font-bold text-sky-900 mb-1 flex items-center justify-between">
-                        <span>🏆 Top Property Audience Ranking</span>
-                        <span class="font-mono text-sky-700">1.19 Billion Viewers</span>
-                    </div>
-                    <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden mt-1.5">
-                        <div class="bg-sky-600 h-full rounded-full" style="width: 100%"></div>
-                    </div>
-                    <div class="flex justify-between text-[10px] text-slate-600 mt-1 font-semibold">
-                        <span>Media Gamma (#1 Ranked)</span>
-                        <span>1,192,842,191 Viewers</span>
-                    </div>
-                </div>`;
-            } else if (clean.includes('camp_842') || clean.includes('9.48') || clean.includes('ad revenue') || clean.includes('spend')) {
-                visualWidget = `
-                <div class="mt-3 p-3.5 bg-purple-50 border border-purple-200 rounded-xl text-xs shadow-sm">
-                    <div class="font-bold text-purple-900 mb-1 flex items-center justify-between">
-                        <span>⏱️ Campaign Ad Spend Leader</span>
-                        <span class="font-mono text-purple-700">$9.48 USD</span>
-                    </div>
-                    <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden mt-1.5">
-                        <div class="bg-purple-600 h-full rounded-full" style="width: 85%"></div>
-                    </div>
-                    <div class="flex justify-between text-[10px] text-slate-600 mt-1 font-semibold">
-                        <span>Campaign camp_842</span>
-                        <span>Highest Campaign Spend</span>
-                    </div>
-                </div>`;
-            } else if (clean.includes('4414') || clean.includes('3192') || clean.includes('session duration') || clean.includes('region')) {
-                visualWidget = `
-                <div class="mt-3 p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs shadow-sm">
-                    <div class="font-bold text-emerald-900 mb-2">📱 Regional Session Duration Comparison</div>
-                    <div class="space-y-2">
-                        <div>
-                            <div class="flex justify-between text-[11px] font-semibold text-slate-700">
-                                <span>🇺🇸 US Region</span>
-                                <span class="font-mono text-emerald-700">4,414.5s (Highest)</span>
-                            </div>
-                            <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden mt-1">
-                                <div class="bg-emerald-600 h-full rounded-full" style="width: 100%"></div>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="flex justify-between text-[11px] font-semibold text-slate-700">
-                                <span>🇬🇧 UK Region</span>
-                                <span class="font-mono text-slate-600">3,192.0s</span>
-                            </div>
-                            <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden mt-1">
-                                <div class="bg-slate-400 h-full rounded-full" style="width: 72%"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>`;
-            }
-
-            return html + visualWidget;
+            return html + viz;
         };
 
-        window.handleChatSubmit = async function(e) {
-            if (e && e.preventDefault) e.preventDefault();
-            const input = document.getElementById('widgetInput');
-            const feed = document.getElementById('chatFeed');
-            const btn = document.getElementById('widgetSendBtn');
-            if (!input || !feed) return;
-            const question = input.value.trim();
-            if (!question) return;
+        // Core submit logic — receives question text directly, no fake Event needed
+        window._submitQuestion = async function(question) {
+            var feed = document.getElementById('chatFeed');
+            var btn = document.getElementById('widgetSendBtn');
+            var input = document.getElementById('widgetInput');
+            if (!feed || !question) return;
 
-            const userMsg = document.createElement('div');
-            userMsg.className = 'flex justify-end';
-            userMsg.innerHTML = `
-                <div class="bg-sky-600 text-white px-3.5 py-2.5 rounded-2xl rounded-tr-sm text-xs max-w-[85%] leading-relaxed shadow-sm">
-                    ${window.escapeHtml(question)}
-                </div>
-            `;
-            feed.appendChild(userMsg);
-            input.value = '';
+            if (input) input.value = '';
             if (btn) btn.disabled = true;
 
-            const loadId = 'load-' + Date.now();
-            const loadMsg = document.createElement('div');
+            var userMsg = document.createElement('div');
+            userMsg.className = 'flex justify-end';
+            userMsg.innerHTML = '<div class="bg-sky-600 text-white px-3.5 py-2.5 rounded-2xl rounded-tr-sm text-xs max-w-[85%] leading-relaxed shadow-sm">' + window.escapeHtml(question) + '</div>';
+            feed.appendChild(userMsg);
+
+            var loadId = 'load-' + Date.now();
+            var loadMsg = document.createElement('div');
             loadMsg.id = loadId;
             loadMsg.className = 'flex items-start gap-2';
-            loadMsg.innerHTML = `
-                <div class="w-6 h-6 rounded-lg bg-sky-600 flex items-center justify-center text-white font-bold text-xs shrink-0">✦</div>
-                <div class="text-slate-500 text-xs italic py-1 flex items-center gap-1.5">
-                    <span class="w-1.5 h-1.5 rounded-full bg-sky-600 animate-ping"></span> Querying lakehouse...
-                </div>
-            `;
+            loadMsg.innerHTML = '<div class="w-6 h-6 rounded-lg bg-sky-600 flex items-center justify-center text-white font-bold text-xs shrink-0">\u2736</div><div class="text-slate-500 text-xs italic py-1 flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-sky-600 animate-ping"></span> Querying lakehouse...</div>';
             feed.appendChild(loadMsg);
             feed.scrollTop = feed.scrollHeight;
 
             try {
-                const resp = await fetch('/ask', {
+                var resp = await fetch('/ask', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ question: question })
                 });
-                document.getElementById(loadId)?.remove();
+                var el = document.getElementById(loadId);
+                if (el) el.remove();
 
                 if (resp.ok) {
-                    const data = await resp.json();
-                    const agentMsg = document.createElement('div');
+                    var data = await resp.json();
+                    var agentMsg = document.createElement('div');
                     agentMsg.className = 'flex items-start gap-2.5';
-                    
-                    let formattedHtml = window.formatBusinessAnswer(data.answer);
-
-                    agentMsg.innerHTML = `
-                        <div class="w-6 h-6 rounded-lg bg-sky-600 flex items-center justify-center text-white font-bold text-xs shrink-0 mt-0.5">✦</div>
-                        <div class="markdown-body text-xs text-slate-800 leading-relaxed bg-white border border-slate-200 p-3.5 rounded-2xl rounded-tl-sm flex-1 shadow-sm">
-                            ${formattedHtml}
-                        </div>
-                    `;
+                    agentMsg.innerHTML = '<div class="w-6 h-6 rounded-lg bg-sky-600 flex items-center justify-center text-white font-bold text-xs shrink-0 mt-0.5">\u2736</div><div class="markdown-body text-xs text-slate-800 leading-relaxed bg-white border border-slate-200 p-3.5 rounded-2xl rounded-tl-sm flex-1 shadow-sm">' + window.formatBusinessAnswer(data.answer) + '</div>';
                     feed.appendChild(agentMsg);
                 } else {
-                    const err = await resp.json().catch(() => ({ detail: 'Service error' }));
-                    const errDiv = document.createElement('div');
+                    var errData = await resp.json().catch(function() { return { detail: 'Service error' }; });
+                    var errDiv = document.createElement('div');
                     errDiv.className = 'bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl text-xs';
-                    errDiv.innerText = `⚠️ Error: ${err.detail || 'Service error'}`;
+                    errDiv.innerText = '\u26A0\uFE0F Error: ' + (errData.detail || 'Service error');
                     feed.appendChild(errDiv);
                 }
-            } catch (err) {
-                document.getElementById(loadId)?.remove();
-                const errDiv = document.createElement('div');
-                errDiv.className = 'bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl text-xs';
-                errDiv.innerText = `⚠️ Connection error: ${err.message}`;
-                feed.appendChild(errDiv);
+            } catch(err) {
+                var el2 = document.getElementById(loadId);
+                if (el2) el2.remove();
+                var errDiv2 = document.createElement('div');
+                errDiv2.className = 'bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl text-xs';
+                errDiv2.innerText = '\u26A0\uFE0F Connection error: ' + err.message;
+                feed.appendChild(errDiv2);
             } finally {
                 if (btn) btn.disabled = false;
                 feed.scrollTop = feed.scrollHeight;
             }
+        };
+
+        // Form onsubmit — reads input value then calls core logic
+        window.handleChatSubmit = function(e) {
+            if (e && e.preventDefault) e.preventDefault();
+            var input = document.getElementById('widgetInput');
+            if (!input) return;
+            var question = input.value.trim();
+            if (!question) return;
+            window._submitQuestion(question);
+        };
+
+        // Quick chip buttons call this — passes question text directly
+        window.sendQuickQuery = function(queryText) {
+            window.toggleChat(true);
+            window._submitQuestion(queryText);
         };
     </script>
 </head>
