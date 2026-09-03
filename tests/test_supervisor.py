@@ -25,7 +25,7 @@ def test_index_endpoint():
     response = client.get("/")
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
-    assert "Executive Media Intelligence Assistant" in response.text
+    assert "Media Analytics AI" in response.text
 
 
 @patch("supervisor.app.DATABRICKS_HOST", "dbc-test.cloud.databricks.com")

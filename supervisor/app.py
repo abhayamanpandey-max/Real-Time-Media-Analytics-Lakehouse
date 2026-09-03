@@ -148,123 +148,105 @@ HTML_INTERFACE = """<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Executive Media Analytics AI Assistant</title>
+    <title>Media Analytics AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        body { background-color: #0f172a; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
-        .markdown-body strong { color: #38bdf8; font-weight: 700; }
-        .markdown-body p { margin-bottom: 0.5rem; }
-        .markdown-body ul { list-style-type: disc; margin-left: 1.25rem; margin-bottom: 0.5rem; }
-        .markdown-body ol { list-style-type: decimal; margin-left: 1.25rem; margin-bottom: 0.5rem; }
-        .markdown-body code { background-color: #1e293b; color: #f43f5e; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.85em; }
-        .markdown-body pre { background-color: #020617; border: 1px solid #1e293b; padding: 1rem; border-radius: 8px; overflow-x: auto; margin-top: 0.5rem; }
+        body { background-color: #171717; color: #ececec; font-family: system-ui, -apple-system, sans-serif; }
+        .markdown-body strong { color: #ffffff; font-weight: 600; }
+        .markdown-body p { margin-bottom: 0.75rem; line-height: 1.625; }
+        .markdown-body ul { list-style-type: disc; margin-left: 1.25rem; margin-bottom: 0.75rem; }
+        .markdown-body ol { list-style-type: decimal; margin-left: 1.25rem; margin-bottom: 0.75rem; }
+        .markdown-body code { background-color: #262626; color: #f43f5e; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.85em; }
+        .markdown-body pre { background-color: #0a0a0a; border: 1px solid #262626; padding: 1rem; border-radius: 12px; overflow-x: auto; margin-top: 0.75rem; margin-bottom: 0.75rem; }
         .markdown-body pre code { background: none; color: #38bdf8; padding: 0; }
     </style>
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
-    <!-- Executive Top Header -->
-    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between shadow-lg">
-        <div class="flex items-center gap-3.5">
-            <div class="w-10 h-10 rounded-xl bg-sky-600/20 border border-sky-500/30 flex items-center justify-center text-sky-400 font-bold text-lg shadow-inner">
-                ⚡
+    <!-- Minimal Header (ChatGPT / Claude style) -->
+    <header class="h-14 border-b border-[#262626] px-6 flex items-center justify-between bg-[#171717] shrink-0">
+        <div class="flex items-center gap-2.5">
+            <div class="w-7 h-7 rounded-full bg-[#262626] flex items-center justify-center text-sky-400 font-bold text-sm border border-[#333333]">
+                ✦
             </div>
-            <div>
-                <h1 class="text-xl font-bold text-slate-100 tracking-tight">Executive Media Intelligence Assistant</h1>
-                <p class="text-xs text-slate-400 mt-0.5">Real-time conversational AI for media properties, ad campaigns, and viewer metrics</p>
-            </div>
+            <span class="text-sm font-semibold tracking-tight text-white">Media Analytics AI</span>
         </div>
-        <div class="flex items-center gap-3">
-            <span class="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full font-semibold flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Lakehouse Connected
+        <div class="flex items-center gap-2">
+            <span class="text-[11px] bg-[#262626] text-neutral-400 border border-[#333333] px-3 py-1 rounded-full font-medium flex items-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Connected to Lakehouse
             </span>
         </div>
     </header>
 
-    <!-- Main Workspace -->
-    <div class="flex-1 flex overflow-hidden">
-        <!-- Sidebar Metrics Overview (Business Focus) -->
-        <aside class="w-80 bg-slate-900/60 border-r border-slate-800 p-5 flex flex-col gap-5 hidden lg:flex">
-            <div>
-                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Key Metrics Tracked</h2>
-                <div class="space-y-3">
-                    <div class="p-3.5 rounded-xl border border-slate-800 bg-slate-900/90 shadow-sm">
-                        <div class="font-semibold text-sm text-sky-400 flex items-center gap-2">
-                            <span>📊</span> Audience & Reach
-                        </div>
-                        <p class="text-xs text-slate-400 mt-1">Property rankings, total viewer counts, and monthly audience share.</p>
-                    </div>
-                    <div class="p-3.5 rounded-xl border border-slate-800 bg-slate-900/90 shadow-sm">
-                        <div class="font-semibold text-sm text-purple-400 flex items-center gap-2">
-                            <span>⏱️</span> Ad Performance & Spend
-                        </div>
-                        <p class="text-xs text-slate-400 mt-1">Campaign ad spend in USD, impression yields, and conversion rates.</p>
-                    </div>
-                    <div class="p-3.5 rounded-xl border border-slate-800 bg-slate-900/90 shadow-sm">
-                        <div class="font-semibold text-sm text-emerald-400 flex items-center gap-2">
-                            <span>📱</span> Regional Engagement
-                        </div>
-                        <p class="text-xs text-slate-400 mt-1">Demographics, regional session durations, and country distribution.</p>
-                    </div>
-                    <div class="p-3.5 rounded-xl border border-slate-800 bg-slate-900/90 shadow-sm">
-                        <div class="font-semibold text-sm text-amber-400 flex items-center gap-2">
-                            <span>💰</span> Content Watch Time
-                        </div>
-                        <p class="text-xs text-slate-400 mt-1">Content title watch times, completion depth, and unique user retention.</p>
-                    </div>
+    <!-- Main Scrollable Chat Area -->
+    <main class="flex-1 overflow-y-auto flex flex-col items-center p-4">
+        <div id="chatFeed" class="w-full max-w-3xl flex-1 flex flex-col justify-between my-auto py-4">
+            
+            <!-- Welcome Screen (ChatGPT / Claude initial state) -->
+            <div id="welcomeScreen" class="my-auto flex flex-col items-center justify-center text-center px-4">
+                <div class="w-12 h-12 rounded-2xl bg-[#262626] border border-[#333333] flex items-center justify-center text-sky-400 font-bold text-xl mb-4 shadow-md">
+                    ✦
+                </div>
+                <h1 class="text-2xl font-semibold text-white tracking-tight mb-2">What would you like to analyze today?</h1>
+                <p class="text-sm text-neutral-400 max-w-md mb-8 leading-relaxed">Ask any question to query streaming audience metrics, campaign ad spend, regional trends, or content watch time.</p>
+                
+                <!-- Prompt Suggestion Cards (ChatGPT style) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-xl text-left text-xs">
+                    <button onclick="setQuestion('Which property had the highest total audience in the most recent monthly period?')" class="p-4 bg-[#212121] hover:bg-[#262626] border border-[#2e2e2e] hover:border-[#404040] rounded-2xl transition-all flex flex-col gap-1 group">
+                        <span class="font-medium text-neutral-200 group-hover:text-white flex items-center gap-2">📊 Top Audience Property</span>
+                        <span class="text-[11px] text-neutral-400">Which property had the highest monthly audience?</span>
+                    </button>
+
+                    <button onclick="setQuestion('Which campaign had the highest total spend?')" class="p-4 bg-[#212121] hover:bg-[#262626] border border-[#2e2e2e] hover:border-[#404040] rounded-2xl transition-all flex flex-col gap-1 group">
+                        <span class="font-medium text-neutral-200 group-hover:text-white flex items-center gap-2">⏱️ Highest Campaign Spend</span>
+                        <span class="text-[11px] text-neutral-400">Analyze campaign ad spend & metrics</span>
+                    </button>
+
+                    <button onclick="setQuestion('What is the average session duration by region?')" class="p-4 bg-[#212121] hover:bg-[#262626] border border-[#2e2e2e] hover:border-[#404040] rounded-2xl transition-all flex flex-col gap-1 group">
+                        <span class="font-medium text-neutral-200 group-hover:text-white flex items-center gap-2">📱 Regional Engagement</span>
+                        <span class="text-[11px] text-neutral-400">View session duration by country & region</span>
+                    </button>
+
+                    <button onclick="setQuestion('Which content title has the highest average watch time?')" class="p-4 bg-[#212121] hover:bg-[#262626] border border-[#2e2e2e] hover:border-[#404040] rounded-2xl transition-all flex flex-col gap-1 group">
+                        <span class="font-medium text-neutral-200 group-hover:text-white flex items-center gap-2">💰 Content Watch Time</span>
+                        <span class="text-[11px] text-neutral-400">Inspect content completion rate & watch time</span>
+                    </button>
                 </div>
             </div>
 
-            <div class="mt-auto p-3.5 rounded-xl border border-slate-800/80 bg-slate-950/60 text-slate-400 text-xs leading-relaxed">
-                💡 <strong class="text-slate-300">Executive Tip:</strong> Click any quick suggestion button or type custom questions to get instant, AI-generated answers.
-            </div>
-        </aside>
+            <!-- Messages Stream -->
+            <div id="messagesList" class="space-y-6 hidden w-full"></div>
 
-        <!-- Executive Chatbot Workspace -->
-        <main class="flex-1 flex flex-col bg-slate-950 p-6 overflow-hidden">
-            <!-- Quick Business Questions Chips -->
-            <div class="flex flex-wrap items-center gap-2 mb-4">
-                <span class="text-xs font-semibold text-slate-400 mr-1">Quick Questions:</span>
-                <button onclick="setQuestion('Which property had the highest total audience in the most recent monthly period?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-sky-400 font-medium px-3.5 py-1.5 rounded-lg transition-all shadow-sm flex items-center gap-1.5">
-                    📊 Top Audience Property
-                </button>
-                <button onclick="setQuestion('Which campaign had the highest total spend?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-purple-400 font-medium px-3.5 py-1.5 rounded-lg transition-all shadow-sm flex items-center gap-1.5">
-                    ⏱️ Highest Campaign Spend
-                </button>
-                <button onclick="setQuestion('What is the average session duration by region?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-emerald-400 font-medium px-3.5 py-1.5 rounded-lg transition-all shadow-sm flex items-center gap-1.5">
-                    📱 Session Duration by Region
-                </button>
-                <button onclick="setQuestion('Which content title has the highest average watch time?')" class="text-xs bg-slate-900 hover:bg-slate-800 border border-slate-800 text-amber-400 font-medium px-3.5 py-1.5 rounded-lg transition-all shadow-sm flex items-center gap-1.5">
-                    💰 Highest Watch Time Content
-                </button>
-            </div>
+        </div>
+    </main>
 
-            <!-- Messages History -->
-            <div id="chatHistory" class="flex-1 overflow-y-auto space-y-4 pr-2">
-                <div class="flex items-start gap-3 max-w-3xl">
-                    <div class="w-8 h-8 rounded-xl bg-sky-600 flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-md">
-                        AI
-                    </div>
-                    <div class="bg-slate-900 border border-slate-800 rounded-2xl rounded-tl-sm p-4 text-sm leading-relaxed text-slate-200 shadow-md">
-                        👋 Welcome! I am your <strong>Executive Media Intelligence Assistant</strong>.<br/><br/>
-                        Ask any question about your media properties, viewer growth, campaign ad spend, or regional engagement metrics below.
-                    </div>
-                </div>
-            </div>
-
-            <!-- Input Form -->
-            <form id="askForm" onsubmit="submitQuestion(event)" class="mt-4 flex gap-3">
-                <input type="text" id="questionInput" placeholder="Ask a business question (e.g. Which property had the highest audience last month?)" class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors shadow-inner" required />
-                <button type="submit" id="sendBtn" class="bg-sky-600 hover:bg-sky-500 text-white font-semibold text-sm px-6 py-3.5 rounded-xl transition-all shadow-lg shadow-sky-600/20 flex items-center gap-2">
-                    <span>Ask AI</span>
+    <!-- Floating Bottom Input Bar (ChatGPT / Claude style) -->
+    <footer class="p-4 flex flex-col items-center shrink-0 bg-[#171717]">
+        <div class="w-full max-w-3xl">
+            <form id="askForm" onsubmit="submitQuestion(event)" class="relative flex items-center">
+                <input 
+                    type="text" 
+                    id="questionInput" 
+                    placeholder="Message Media Analytics AI..." 
+                    class="w-full bg-[#212121] border border-[#2e2e2e] focus:border-[#404040] text-white rounded-2xl pl-5 pr-14 py-4 text-sm focus:outline-none transition-colors shadow-inner placeholder-neutral-500" 
+                    required 
+                />
+                <button 
+                    type="submit" 
+                    id="sendBtn" 
+                    class="absolute right-2.5 bg-sky-600 hover:bg-sky-500 text-white w-9 h-9 rounded-xl flex items-center justify-center transition-all shadow-md font-bold text-base"
+                >
+                    ↑
                 </button>
             </form>
-        </main>
-    </div>
+            <p class="text-[11px] text-neutral-500 text-center mt-2.5">Media Analytics AI analyzes live Delta Lake data via Databricks Genie.</p>
+        </div>
+    </footer>
 
     <script>
         const questionInput = document.getElementById('questionInput');
-        const chatHistory = document.getElementById('chatHistory');
+        const welcomeScreen = document.getElementById('welcomeScreen');
+        const messagesList = document.getElementById('messagesList');
         const sendBtn = document.getElementById('sendBtn');
 
         function setQuestion(q) {
@@ -277,12 +259,14 @@ HTML_INTERFACE = """<!DOCTYPE html>
             const question = questionInput.value.trim();
             if (!question) return;
 
-            // Render User Message
+            // Show Messages Container & Hide Welcome Screen
+            if (welcomeScreen) welcomeScreen.classList.add('hidden');
+            messagesList.classList.remove('hidden');
+
             appendUserMessage(question);
             questionInput.value = '';
             sendBtn.disabled = true;
 
-            // Render Loading Message
             const loadingId = appendLoading();
 
             try {
@@ -314,17 +298,17 @@ HTML_INTERFACE = """<!DOCTYPE html>
             const div = document.createElement('div');
             div.className = 'flex justify-end';
             div.innerHTML = `
-                <div class="bg-sky-600 text-white font-medium rounded-2xl rounded-tr-sm px-4 py-3 text-sm max-w-xl shadow-md leading-relaxed">
+                <div class="bg-[#262626] text-white rounded-2xl rounded-tr-sm px-4 py-3 text-sm max-w-xl shadow-sm border border-[#333333] leading-relaxed">
                     ${escapeHtml(text)}
                 </div>
             `;
-            chatHistory.appendChild(div);
-            chatHistory.scrollTop = chatHistory.scrollHeight;
+            messagesList.appendChild(div);
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         }
 
         function appendAgentResponse(rawAnswer) {
             const div = document.createElement('div');
-            div.className = 'flex items-start gap-3 max-w-3xl';
+            div.className = 'flex items-start gap-4';
             
             let formattedHtml = '';
             if (typeof marked !== 'undefined') {
@@ -334,47 +318,47 @@ HTML_INTERFACE = """<!DOCTYPE html>
             }
 
             div.innerHTML = `
-                <div class="w-8 h-8 rounded-xl bg-sky-600 flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-md">
-                    AI
+                <div class="w-8 h-8 rounded-full bg-[#262626] border border-[#333333] flex items-center justify-center text-sky-400 font-bold text-sm shrink-0 mt-0.5">
+                    ✦
                 </div>
-                <div class="markdown-body bg-slate-900 border border-slate-800 rounded-2xl rounded-tl-sm p-4 text-sm leading-relaxed text-slate-200 shadow-md flex-1">
+                <div class="markdown-body text-sm text-[#ececec] leading-relaxed flex-1">
                     ${formattedHtml}
                 </div>
             `;
-            chatHistory.appendChild(div);
-            chatHistory.scrollTop = chatHistory.scrollHeight;
+            messagesList.appendChild(div);
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         }
 
         function appendError(errorText) {
             const div = document.createElement('div');
-            div.className = 'flex items-start gap-3 max-w-2xl';
+            div.className = 'flex items-start gap-4';
             div.innerHTML = `
-                <div class="w-8 h-8 rounded-xl bg-red-600 flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-md">
+                <div class="w-8 h-8 rounded-full bg-red-950/80 border border-red-800 text-red-400 font-bold text-xs flex items-center justify-center shrink-0">
                     !
                 </div>
-                <div class="bg-red-950/80 border border-red-800 text-red-300 rounded-2xl rounded-tl-sm p-4 text-sm shadow-md">
+                <div class="text-red-400 text-sm py-1">
                     ⚠️ ${escapeHtml(errorText)}
                 </div>
             `;
-            chatHistory.appendChild(div);
-            chatHistory.scrollTop = chatHistory.scrollHeight;
+            messagesList.appendChild(div);
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         }
 
         function appendLoading() {
             const id = 'loading-' + Date.now();
             const div = document.createElement('div');
             div.id = id;
-            div.className = 'flex items-start gap-3 max-w-xl';
+            div.className = 'flex items-start gap-4';
             div.innerHTML = `
-                <div class="w-8 h-8 rounded-xl bg-sky-600/30 border border-sky-500/40 flex items-center justify-center text-sky-400 font-bold text-xs shrink-0">
-                    AI
+                <div class="w-8 h-8 rounded-full bg-[#262626] border border-[#333333] flex items-center justify-center text-sky-400 font-bold text-sm shrink-0">
+                    ✦
                 </div>
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl rounded-tl-sm px-4 py-3 text-sm text-slate-400 italic flex items-center gap-2 shadow-md">
-                    <span class="w-2 h-2 rounded-full bg-sky-400 animate-ping"></span> Analyzing media analytics lakehouse...
+                <div class="text-neutral-400 text-sm italic py-1 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-sky-400 animate-ping"></span> Thinking...
                 </div>
             `;
-            chatHistory.appendChild(div);
-            chatHistory.scrollTop = chatHistory.scrollHeight;
+            messagesList.appendChild(div);
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
             return id;
         }
 
@@ -390,6 +374,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
 </body>
 </html>
 """
+
 
 
 @app.get("/", response_class=HTMLResponse)
