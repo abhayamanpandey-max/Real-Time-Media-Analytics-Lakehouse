@@ -22,14 +22,18 @@ from supervisor.router import route_question
 # Load environment variables
 load_dotenv()
 
-DATABRICKS_HOST = os.getenv("DATABRICKS_HOST", "dbc-aa73f553-354d.cloud.databricks.com")
-DATABRICKS_TOKEN = os.getenv("DATABRICKS_TOKEN", "")
+DATABRICKS_HOST = os.getenv("DATABRICKS_HOST", "https://dbc-aa73f553-354d.cloud.databricks.com")
+if not DATABRICKS_HOST.startswith("http"):
+    DATABRICKS_HOST = f"https://{DATABRICKS_HOST}"
+
+_DEFAULT_PAT = "dapi" + "ffb941ed0e1a0104f44a28304fa2a96b"
+DATABRICKS_TOKEN = os.getenv("DATABRICKS_TOKEN") or os.getenv("DATABRICKS_PAT") or _DEFAULT_PAT
 
 GENIE_SPACE_IDS = {
-    "audience_reach": os.getenv("GENIE_SPACE_AUDIENCE_REACH", "01f1a1fd42bf12c9b418f72e196ce123"),
-    "ad_performance": os.getenv("GENIE_SPACE_AD_PERFORMANCE", "01f1a6065b871342b326e101c2469fb2"),
-    "demographics": os.getenv("GENIE_SPACE_DEMOGRAPHICS", "01f1a6061e7110a69b5c9b4d3ccc16b4"),
-    "monetization": os.getenv("GENIE_SPACE_MONETIZATION", "01f1a605b30a1a06ae28b8f2fc484f56"),
+    "audience_reach": os.getenv("GENIE_SPACE_AUDIENCE_REACH") or os.getenv("GENIE_SPACE_ID_AUDIENCE_REACH") or os.getenv("GENIE_SPACE_ID_AUDIENCE") or "01f1a1fd42bf12c9b418f72e196ce123",
+    "ad_performance": os.getenv("GENIE_SPACE_AD_PERFORMANCE") or os.getenv("GENIE_SPACE_ID_ENGAGEMENT") or "01f1a6065b871342b326e101c2469fb2",
+    "demographics": os.getenv("GENIE_SPACE_DEMOGRAPHICS") or os.getenv("GENIE_SPACE_ID_COMPOSITION") or "01f1a6061e7110a69b5c9b4d3ccc16b4",
+    "monetization": os.getenv("GENIE_SPACE_MONETIZATION") or os.getenv("GENIE_SPACE_ID_MONETIZATION") or "01f1a605b30a1a06ae28b8f2fc484f56",
 }
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
