@@ -30,10 +30,14 @@ _DEFAULT_PAT = "dapi" + "ffb941ed0e1a0104f44a28304fa2a96b"
 DATABRICKS_TOKEN = os.getenv("DATABRICKS_TOKEN") or os.getenv("DATABRICKS_PAT") or _DEFAULT_PAT
 
 GENIE_SPACE_IDS = {
+    # Keys returned by router.py
     "audience_reach": os.getenv("GENIE_SPACE_AUDIENCE_REACH") or os.getenv("GENIE_SPACE_ID_AUDIENCE_REACH") or os.getenv("GENIE_SPACE_ID_AUDIENCE") or "01f1a1fd42bf12c9b418f72e196ce123",
+    "engagement":     os.getenv("GENIE_SPACE_ID_ENGAGEMENT") or os.getenv("GENIE_SPACE_AD_PERFORMANCE") or "01f1a6065b871342b326e101c2469fb2",
+    "composition":    os.getenv("GENIE_SPACE_ID_COMPOSITION") or os.getenv("GENIE_SPACE_DEMOGRAPHICS") or "01f1a6061e7110a69b5c9b4d3ccc16b4",
+    "monetization":   os.getenv("GENIE_SPACE_MONETIZATION") or os.getenv("GENIE_SPACE_ID_MONETIZATION") or "01f1a605b30a1a06ae28b8f2fc484f56",
+    # Legacy alias keys (kept for backward compat if domain is passed explicitly)
     "ad_performance": os.getenv("GENIE_SPACE_AD_PERFORMANCE") or os.getenv("GENIE_SPACE_ID_ENGAGEMENT") or "01f1a6065b871342b326e101c2469fb2",
-    "demographics": os.getenv("GENIE_SPACE_DEMOGRAPHICS") or os.getenv("GENIE_SPACE_ID_COMPOSITION") or "01f1a6061e7110a69b5c9b4d3ccc16b4",
-    "monetization": os.getenv("GENIE_SPACE_MONETIZATION") or os.getenv("GENIE_SPACE_ID_MONETIZATION") or "01f1a605b30a1a06ae28b8f2fc484f56",
+    "demographics":   os.getenv("GENIE_SPACE_DEMOGRAPHICS") or os.getenv("GENIE_SPACE_ID_COMPOSITION") or "01f1a6061e7110a69b5c9b4d3ccc16b4",
 }
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
