@@ -280,6 +280,8 @@ HTML_INTERFACE = """<!DOCTYPE html>
             }
         };
 
+        window.TENETIC_LOGO_URI = "data:image/png;base64,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";
+
         window.exportResponsePDF = function(btn, msgId) {
             var orig = btn ? btn.innerHTML : null;
             if (btn) btn.innerHTML = '<span class="text-sky-600 font-bold">⏳ Exporting...</span>';
@@ -299,13 +301,14 @@ HTML_INTERFACE = """<!DOCTYPE html>
             }
 
             var nowStr = new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+            var logoSrc = window.TENETIC_LOGO_URI || '/static/tenetic_logo.png';
 
             var reportHtml = 
-                '<div style="font-family: system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; color: #0f172a; padding: 28px; background: #ffffff; max-width: 800px; margin: 0 auto; line-height: 1.6;">' +
+                '<div style="font-family: system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; color: #0f172a; padding: 28px; background: #ffffff; width: 750px; line-height: 1.6;">' +
                     '<div style="border-bottom: 2px solid #0284c7; padding-bottom: 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">' +
                         '<div>' +
                             '<div style="display: flex; align-items: center; gap: 8px;">' +
-                                '<div style="display:flex; align-items:center; gap:8px;"><img src="/static/tenetic_logo.png" style="height:24px; width:auto;" /></div>' +
+                                '<div style="display:flex; align-items:center; gap:8px;"><img src="' + logoSrc + '" style="height:28px; width:auto;" /></div>' +
                                 '<span style="background: #0284c7; color: #ffffff; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; text-transform: uppercase;">Media Lakehouse</span>' +
                             '</div>' +
                             '<div style="font-size: 12px; color: #64748b; margin-top: 4px;">Executive Media Intelligence & US Telecasts Brief</div>' +
@@ -315,6 +318,13 @@ HTML_INTERFACE = """<!DOCTYPE html>
                             '<div style="color: #059669; font-weight: bold; margin-top: 2px;">● Databricks Lakehouse Live</div>' +
                         '</div>' +
                     '</div>' +
+
+                    (item.query ? (
+                        '<div style="margin-bottom: 20px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 10px; padding: 14px 18px;">' +
+                            '<div style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: #0284c7; letter-spacing: 0.5px; margin-bottom: 4px;">Executive Query</div>' +
+                            '<div style="font-size: 13px; font-weight: 600; color: #0369a1;">' + item.query + '</div>' +
+                        '</div>'
+                    ) : '') +
 
                     '<div style="margin-bottom: 24px;">' +
                         '<div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #0284c7; letter-spacing: 0.5px; margin-bottom: 8px;">Executive Response & Analysis</div>' +
@@ -348,28 +358,18 @@ HTML_INTERFACE = """<!DOCTYPE html>
             }
 
             if (typeof html2pdf !== 'undefined') {
-                var tempDiv = document.createElement('div');
-                tempDiv.style.position = 'fixed';
-                tempDiv.style.left = '-9999px';
-                tempDiv.style.top = '0';
-                tempDiv.style.width = '800px';
-                tempDiv.innerHTML = reportHtml;
-                document.body.appendChild(tempDiv);
-
                 var opt = {
                     margin: 10,
                     filename: 'tenetic_executive_brief_' + msgId + '.pdf',
                     image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2, useCORS: true },
+                    html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0 },
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
                 };
 
-                html2pdf().set(opt).from(tempDiv).save().then(function() {
-                    document.body.removeChild(tempDiv);
+                html2pdf().set(opt).from(reportHtml).save().then(function() {
                     finish();
                 }).catch(function(err) {
                     console.error('html2pdf error, falling back to print', err);
-                    document.body.removeChild(tempDiv);
                     window.printReportFallback(reportHtml, finish);
                 });
             } else {
@@ -391,13 +391,14 @@ HTML_INTERFACE = """<!DOCTYPE html>
             var feedClone = feed.cloneNode(true);
             var buttonsToRemove = feedClone.querySelectorAll('button');
             buttonsToRemove.forEach(function(b) { b.remove(); });
+            var logoSrc = window.TENETIC_LOGO_URI || '/static/tenetic_logo.png';
 
             var fullReportHtml = 
-                '<div style="font-family: system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; color: #0f172a; padding: 28px; background: #ffffff; max-width: 800px; margin: 0 auto; line-height: 1.6;">' +
+                '<div style="font-family: system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; color: #0f172a; padding: 28px; background: #ffffff; width: 750px; line-height: 1.6;">' +
                     '<div style="border-bottom: 2px solid #0284c7; padding-bottom: 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">' +
                         '<div>' +
                             '<div style="display: flex; align-items: center; gap: 8px;">' +
-                                '<div style="display:flex; align-items:center; gap:8px;"><img src="/static/tenetic_logo.png" style="height:24px; width:auto;" /></div>' +
+                                '<div style="display:flex; align-items:center; gap:8px;"><img src="' + logoSrc + '" style="height:28px; width:auto;" /></div>' +
                                 '<span style="background: #0284c7; color: #ffffff; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; text-transform: uppercase;">Lakehouse Intelligence</span>' +
                             '</div>' +
                             '<div style="font-size: 12px; color: #64748b; margin-top: 4px;">Full Executive Session Transcript & Analytics Dossier</div>' +
@@ -428,28 +429,18 @@ HTML_INTERFACE = """<!DOCTYPE html>
             }
 
             if (typeof html2pdf !== 'undefined') {
-                var tempDiv = document.createElement('div');
-                tempDiv.style.position = 'fixed';
-                tempDiv.style.left = '-9999px';
-                tempDiv.style.top = '0';
-                tempDiv.style.width = '800px';
-                tempDiv.innerHTML = fullReportHtml;
-                document.body.appendChild(tempDiv);
-
                 var opt = {
                     margin: 10,
                     filename: 'tenetic_session_dossier_' + Date.now() + '.pdf',
                     image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2, useCORS: true },
+                    html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0 },
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
                 };
 
-                html2pdf().set(opt).from(tempDiv).save().then(function() {
-                    document.body.removeChild(tempDiv);
+                html2pdf().set(opt).from(fullReportHtml).save().then(function() {
                     finish();
                 }).catch(function(err) {
                     console.error('html2pdf session error', err);
-                    document.body.removeChild(tempDiv);
                     window.printReportFallback(fullReportHtml, finish);
                 });
             } else {
