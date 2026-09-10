@@ -126,21 +126,26 @@ HTML_INTERFACE = """<!DOCTYPE html>
     <script>
         window.toggleChat = function(open) {
             var widget = document.getElementById('chatWidget');
+            var trigger = document.getElementById('chatToggleBtn');
             if (!widget) return;
 
             if (open === true || open === 1) {
                 widget.style.display = 'flex';
+                if (trigger && window.innerWidth < 640) trigger.style.display = 'none';
                 widget.classList.add('ring-4', 'ring-sky-400');
                 setTimeout(function() {
                     widget.classList.remove('ring-4', 'ring-sky-400');
                 }, 800);
             } else if (open === false || open === 0) {
                 widget.style.display = 'none';
+                if (trigger) trigger.style.display = 'flex';
             } else {
                 if (widget.style.display === 'none' || widget.style.display === '') {
                     widget.style.display = 'flex';
+                    if (trigger && window.innerWidth < 640) trigger.style.display = 'none';
                 } else {
                     widget.style.display = 'none';
+                    if (trigger) trigger.style.display = 'flex';
                 }
             }
 
@@ -236,6 +241,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
         };
 
         window.downloadResponseCSV = function(csvEncoded, filename) {
+            filename = filename || 'tenetic_lakehouse_data.csv';
             try {
                 var csv = decodeURIComponent(csvEncoded);
                 var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -261,7 +267,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
         window.printReportFallback = function(reportHtml, onDone) {
             var printWin = window.open('', '_blank', 'width=850,height=900');
             if (printWin) {
-                printWin.document.write('<!DOCTYPE html><html><head><title>Tenetic Executive Brief</title><style>body { margin: 0; padding: 24px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; } @media print { body { padding: 0; } }</style></head><body>' + reportHtml + '</body></html>');
+                printWin.document.write('<!DOCTYPE html><html><head><title>Tenetic Executive Brief</title><style>body { margin: 0; padding: 24px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; } @media print { body { padding: 0; } }</style><' + '/head><' + 'body>' + reportHtml + '<' + '/body><' + '/html>');
                 printWin.document.close();
                 printWin.focus();
                 setTimeout(function() {
@@ -481,7 +487,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
             }
 
             var chipsHtml = suggestions.map(function(s) {
-                return '<button type="button" onclick="window.sendQuickQuery(\\'' + s.query.replace(/'/g, "\\\\'") + '\\', this)" class="bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200/80 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-all hover:scale-[1.02] cursor-pointer shadow-2xs">' + s.label + '</button>';
+                return '<button type="button" data-query="' + window.escapeHtml(s.query) + '" onclick="window.sendQuickQuery(this.dataset.query, this)" class="bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200/80 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-all hover:scale-[1.02] cursor-pointer shadow-2xs touch-manipulation">' + s.label + '</button>';
             }).join(' ');
 
             return '<div class="mt-3 pt-2.5 border-t border-slate-200/60">' +
@@ -530,8 +536,8 @@ HTML_INTERFACE = """<!DOCTYPE html>
                 '<div class="font-bold text-slate-900 mb-2 flex items-center justify-between gap-2">' +
                 '<span class="flex items-center gap-1.5 truncate">🍩 ' + (title || 'Distribution Breakdown') + '</span>' +
                 '<div class="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg text-[10px] shrink-0 font-medium">' +
-                '<button type="button" onclick="window.switchCardView(\\'' + uid + '\\', \\'chart\\')" id="' + uid + '_btn_chart" class="px-2 py-0.5 rounded font-bold bg-white text-slate-900 shadow-xs cursor-pointer">Chart</button>' +
-                '<button type="button" onclick="window.switchCardView(\\'' + uid + '\\', \\'table\\')" id="' + uid + '_btn_table" class="px-2 py-0.5 rounded font-medium text-slate-500 hover:text-slate-800 cursor-pointer">Table</button>' +
+                '<button type="button" data-uid="' + uid + '" data-view="chart" onclick="window.switchCardView(this.dataset.uid, this.dataset.view)" id="' + uid + '_btn_chart" class="px-2 py-0.5 rounded font-bold bg-white text-slate-900 shadow-xs cursor-pointer">Chart</button>' +
+                '<button type="button" data-uid="' + uid + '" data-view="table" onclick="window.switchCardView(this.dataset.uid, this.dataset.view)" id="' + uid + '_btn_table" class="px-2 py-0.5 rounded font-medium text-slate-500 hover:text-slate-800 cursor-pointer">Table</button>' +
                 '</div>' +
                 '</div>' +
                 '<div id="' + uid + '_chart" class="flex items-center gap-3.5">' +
@@ -628,8 +634,8 @@ HTML_INTERFACE = """<!DOCTYPE html>
                 '<div class="font-bold text-slate-900 mb-2 flex items-center justify-between gap-2">' +
                 '<span class="flex items-center gap-1.5 truncate">📊 ' + (title || 'Ranked Comparison') + '</span>' +
                 '<div class="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg text-[10px] shrink-0 font-medium">' +
-                '<button type="button" onclick="window.switchCardView(\\'' + uid + '\\', \\'chart\\')" id="' + uid + '_btn_chart" class="px-2 py-0.5 rounded font-bold bg-white text-slate-900 shadow-xs cursor-pointer">Chart</button>' +
-                '<button type="button" onclick="window.switchCardView(\\'' + uid + '\\', \\'table\\')" id="' + uid + '_btn_table" class="px-2 py-0.5 rounded font-medium text-slate-500 hover:text-slate-800 cursor-pointer">Table</button>' +
+                '<button type="button" data-uid="' + uid + '" data-view="chart" onclick="window.switchCardView(this.dataset.uid, this.dataset.view)" id="' + uid + '_btn_chart" class="px-2 py-0.5 rounded font-bold bg-white text-slate-900 shadow-xs cursor-pointer">Chart</button>' +
+                '<button type="button" data-uid="' + uid + '" data-view="table" onclick="window.switchCardView(this.dataset.uid, this.dataset.view)" id="' + uid + '_btn_table" class="px-2 py-0.5 rounded font-medium text-slate-500 hover:text-slate-800 cursor-pointer">Table</button>' +
                 '</div>' +
                 '</div>' +
                 '<div id="' + uid + '_chart" class="space-y-1.5">' + barsHtml + '</div>' +
@@ -652,7 +658,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
 
             var csvBtnHtml = '';
             if (csvEncoded) {
-                csvBtnHtml = '<button type="button" onclick="window.downloadResponseCSV(\\'' + csvEncoded + '\\', \\'tenetic_lakehouse_data.csv\\')" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors cursor-pointer text-[10px]">' +
+                csvBtnHtml = '<button type="button" data-csv="' + csvEncoded + '" onclick="window.downloadResponseCSV(this.dataset.csv)" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors cursor-pointer text-[10px]">' +
                     '<span>📥</span> <span>Export CSV</span>' +
                     '</button>';
             }
@@ -666,14 +672,14 @@ HTML_INTERFACE = """<!DOCTYPE html>
                 '</div>' +
                 '<div class="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">' +
                 '<div class="flex items-center gap-1.5 flex-wrap">' +
-                '<button type="button" onclick="window.copyAnswerText(this, \\'' + msgId + '\\')" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors cursor-pointer text-[10px]">' +
+                '<button type="button" data-msg-id="' + msgId + '" onclick="window.copyAnswerText(this, this.dataset.msgId)" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors cursor-pointer text-[10px]">' +
                 '<span>📋</span> <span>Copy Brief</span>' +
                 '</button>' +
-                '<button type="button" onclick="window.exportResponsePDF(this, \\'' + msgId + '\\')" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors cursor-pointer text-[10px]">' +
+                '<button type="button" data-msg-id="' + msgId + '" onclick="window.exportResponsePDF(this, this.dataset.msgId)" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors cursor-pointer text-[10px]">' +
                 '<span>📄</span> <span>Export PDF</span>' +
                 '</button>' +
                 csvBtnHtml +
-                '<button type="button" onclick="window.toggleLineage(\\'' + msgId + '_lineage\\')" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium transition-colors cursor-pointer text-[10px]">' +
+                '<button type="button" data-target="' + msgId + '_lineage" onclick="window.toggleLineage(this.dataset.target)" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium transition-colors cursor-pointer text-[10px]">' +
                 '<span>🔍</span> <span>Lineage</span>' +
                 '</button>' +
                 '</div>' +
@@ -695,7 +701,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
             var html = (typeof marked !== 'undefined') ? marked.parse(clean) : clean.replace(/\\n/g, '<br>');
 
             // 1. Check for Pie / Donut Chart (Percentage distributions)
-            var pieRegex = /\\*\\*([^*]+)\\*\\*[:\\s]*\\(?([0-9]+(?:\\.[0-9]+)?)\\s*\\%/g;
+            var pieRegex = /\*\*([^*]+)\*\*[:\s]*\(?([0-9]+(?:\.[0-9]+)?)\s*%/g;
             var pieMatches = [];
             var pMatch;
             while ((pMatch = pieRegex.exec(clean)) !== null) {
@@ -714,7 +720,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
             }
 
             // 2. Check for Key-Value Numerical Metrics
-            var kvRegex = /[-*•]?\\s*\\*\\*([^*]+)\\*\\*:\\s*\\$?([0-9,]+(?:\\.[0-9]+)?(?:\\s*(?:seconds|viewers|USD|\\%))?)/g;
+            var kvRegex = /[-*•]?\s*\*\*([^*]+)\*\*:\s*\$?([0-9,]+(?:\.[0-9]+)?(?:\s*(?:seconds|viewers|USD|%))?)/g;
             var kvMatches = [];
             var kMatch;
             while ((kMatch = kvRegex.exec(clean)) !== null) {
@@ -727,7 +733,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
             }
 
             if (kvMatches.length === 0) {
-                var fallbackRegex = /[-*•]?\\s*\\*?\\*?([^:\\d\\n]+?)\\*?\\*?:\\s*\\$?([0-9,]+(?:\\.[0-9]+)?)/g;
+                var fallbackRegex = /[-*•]?\s*\*?\*?([^:\d\n]+?)\*?\*?:\s*\$?([0-9,]+(?:\.[0-9]+)?)/g;
                 var fbMatch;
                 while ((fbMatch = fallbackRegex.exec(clean)) !== null) {
                     var fbLabel = fbMatch[1].replace(/[*_]/g, '').trim();
@@ -928,6 +934,44 @@ HTML_INTERFACE = """<!DOCTYPE html>
             </a>
         </div>
 
+        
+        <!-- Visual Telecast Telemetry Hero Card -->
+        <div class="relative rounded-3xl overflow-hidden shadow-2xl border border-slate-700 bg-slate-900 group mt-10 mb-6 w-full max-w-5xl">
+            <img 
+                src="https://images.unsplash.com/photo-1522869635100-9f4c5e86aa37?auto=format&fit=crop&w=1200&q=80" 
+                alt="US Live Telecast Broadcast Control Room" 
+                class="w-full h-64 sm:h-80 object-cover opacity-60 group-hover:scale-102 transition-transform duration-700 ease-out" 
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent flex flex-col justify-between p-6 sm:p-8 text-left">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div class="inline-flex items-center gap-2 bg-slate-900/90 backdrop-blur-md border border-slate-700 px-3.5 py-1.5 rounded-full text-xs font-mono text-emerald-400">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span>LIVE TELECAST TELEMETRY INGEST</span>
+                    </div>
+                    <div class="text-[11px] font-mono text-slate-300 bg-slate-900/80 backdrop-blur-md px-3 py-1 rounded-lg border border-slate-700">
+                        <span>Stream: <strong>42,800 events/s</strong></span> • <span>Latency: <strong>&lt;12ms</strong></span>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+                    <div class="bg-slate-900/85 backdrop-blur-md border border-slate-700/80 p-4 rounded-2xl shadow-sm">
+                        <div class="text-[10px] uppercase font-mono text-slate-400">Audience Leader</div>
+                        <div class="text-xl font-bold text-white mt-1">Media Gamma</div>
+                        <div class="text-xs text-sky-400 font-mono mt-0.5 font-bold">1,192,842,191 Viewers</div>
+                    </div>
+                    <div class="bg-slate-900/85 backdrop-blur-md border border-slate-700/80 p-4 rounded-2xl shadow-sm">
+                        <div class="text-[10px] uppercase font-mono text-slate-400">Cross-Platform Distribution</div>
+                        <div class="text-xl font-bold text-white mt-1">Connected TV &amp; Mobile</div>
+                        <div class="text-xs text-emerald-400 font-mono mt-0.5 font-bold">4 Platforms Tracked</div>
+                    </div>
+                    <div class="bg-slate-900/85 backdrop-blur-md border border-slate-700/80 p-4 rounded-2xl shadow-sm">
+                        <div class="text-[10px] uppercase font-mono text-slate-400">Monetization &amp; Ad Impact</div>
+                        <div class="text-xl font-bold text-white mt-1">Top Campaigns &amp; Brands</div>
+                        <div class="text-xs text-indigo-400 font-mono mt-0.5 font-bold">$9.48 CPM Average</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Executive Architecture Badges -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-5xl mt-14 text-left">
             <div class="bg-white border border-slate-200 p-5 rounded-2xl shadow-xs hover:border-sky-300 transition-colors">
@@ -968,66 +1012,97 @@ HTML_INTERFACE = """<!DOCTYPE html>
         </div>
     </section>
 
-    <!-- Live Telecasting & US Market Operations (Clean Corporate Cards, No Photos) -->
-    <section id="telecasts" class="py-16 bg-white border-y border-slate-200 px-6">
+        <!-- Live Telecasts & US Operations Section -->
+    <section id="telecasts" class="py-16 bg-white border-y border-slate-200 px-6 w-full">
         <div class="max-w-6xl mx-auto">
             <div class="text-center max-w-2xl mx-auto mb-12">
-                <h2 class="text-xs font-extrabold uppercase tracking-widest text-sky-600 mb-2">Live Telecasts & US Operations</h2>
-                <h3 class="text-3xl font-black text-slate-900 tracking-tight">Real-Time Intelligence Across US Live Telecasts</h3>
-                <p class="text-xs sm:text-sm text-slate-600 mt-3">From live NFL and sports broadcasts to national network programming and local news, Tenetic converts telecast telemetry into certified advertising value.</p>
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-50 border border-sky-200 text-sky-700 text-xs font-mono font-bold mb-2">
+                    <span class="w-2 h-2 rounded-full bg-sky-600"></span>
+                    US NATIONAL &amp; REGIONAL INFRASTRUCTURE
+                </div>
+                <h3 class="text-3xl font-black text-slate-900 tracking-tight">Live Telecasts &amp; US Operations</h3>
+                <p class="text-xs sm:text-sm text-slate-600 mt-3">From live NFL and sports broadcasts to national network programming and local news, Tenetic converts telecast telemetry into certified advertising value across 210 US DMAs.</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Card 1: Broadcast Telecasts -->
-                <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between shadow-xs hover:border-sky-300 transition-colors">
-                    <div>
-                        <div class="w-12 h-12 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center mb-4">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                <!-- Card 1: Broadcast Telecast Studio -->
+                <div class="rounded-2xl bg-slate-50 border border-slate-200 overflow-hidden shadow-xs flex flex-col group hover:shadow-md transition-shadow">
+                    <div class="h-44 w-full relative overflow-hidden bg-slate-900">
+                        <img 
+                            src="https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?auto=format&fit=crop&w=800&q=80" 
+                            alt="Live Sports &amp; Broadcast Master Control" 
+                            class="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500" 
+                        />
+                        <div class="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md px-2.5 py-1 rounded-md text-[10px] font-mono font-bold text-sky-400 border border-slate-700">
+                            MASTER CONTROL TELEMETRY
                         </div>
-                        <h4 class="text-base font-bold text-slate-900 mb-2">Live Broadcast & Sports Telecasts</h4>
-                        <p class="text-xs text-slate-600 leading-relaxed">
-                            Minute-by-minute audience measurement and ad engagement telemetry during live sports games, award shows, and national broadcasts across major US television networks.
-                        </p>
                     </div>
-                    <div class="mt-6 pt-4 border-t border-slate-200 text-[11px] font-bold text-sky-700 flex items-center gap-1.5">
-                        <span class="w-1.5 h-1.5 rounded-full bg-sky-600"></span> Real-Time Viewer Volume & Ad Impact
+                    <div class="p-5 flex-1 flex flex-col justify-between">
+                        <div>
+                            <h4 class="text-base font-bold text-slate-900 mb-1.5">Live Broadcast &amp; Sports Telecasts</h4>
+                            <p class="text-xs text-slate-600 leading-relaxed">
+                                Provides minute-by-minute audience measurement and ad engagement telemetry during live sports games, award shows, and national broadcasts across major US networks.
+                            </p>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-slate-200 text-[11px] font-bold text-sky-700 flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-sky-600"></span> Real-Time Viewer Volume &amp; Ad Impact
+                        </div>
                     </div>
                 </div>
 
                 <!-- Card 2: Local US Station Sales -->
-                <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between shadow-xs hover:border-indigo-300 transition-colors">
-                    <div>
-                        <div class="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center mb-4">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                <div class="rounded-2xl bg-slate-50 border border-slate-200 overflow-hidden shadow-xs flex flex-col group hover:shadow-md transition-shadow">
+                    <div class="h-44 w-full relative overflow-hidden bg-slate-900">
+                        <img 
+                            src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80" 
+                            alt="Local US Station Sales Intelligence" 
+                            class="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500" 
+                        />
+                        <div class="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md px-2.5 py-1 rounded-md text-[10px] font-mono font-bold text-indigo-400 border border-slate-700">
+                            210 DMA COVERAGE
                         </div>
-                        <h4 class="text-base font-bold text-slate-900 mb-2">Local US Station Sales Intelligence</h4>
-                        <p class="text-xs text-slate-600 leading-relaxed">
-                            Empowers local sales teams across US regions (New York, Los Angeles, Chicago, Dallas, Atlanta, and beyond) to prove inventory value to local advertisers with verified precision.
-                        </p>
                     </div>
-                    <div class="mt-6 pt-4 border-t border-slate-200 text-[11px] font-bold text-indigo-700 flex items-center gap-1.5">
-                        <span class="w-1.5 h-1.5 rounded-full bg-indigo-600"></span> 210 US DMA Regional Sales Engine
+                    <div class="p-5 flex-1 flex flex-col justify-between">
+                        <div>
+                            <h4 class="text-base font-bold text-slate-900 mb-1.5">Local US Station Sales Intelligence</h4>
+                            <p class="text-xs text-slate-600 leading-relaxed">
+                                Delivers programmatic sales intelligence across all 210 US Designated Market Areas (DMAs), empowering local broadcasters and media buyers with unified inventory metrics.
+                            </p>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-slate-200 text-[11px] font-bold text-indigo-700 flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-indigo-600"></span> Designated Market Area Pricing &amp; Lift
+                        </div>
                     </div>
                 </div>
 
-                <!-- Card 3: CivicScience Survey Fusion -->
-                <div class="p-6 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between shadow-xs hover:border-purple-300 transition-colors">
-                    <div>
-                        <div class="w-12 h-12 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center mb-4">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                <!-- Card 3: CivicScience Survey Integration -->
+                <div class="rounded-2xl bg-slate-50 border border-slate-200 overflow-hidden shadow-xs flex flex-col group hover:shadow-md transition-shadow">
+                    <div class="h-44 w-full relative overflow-hidden bg-slate-900">
+                        <img 
+                            src="https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=800&q=80" 
+                            alt="CivicScience Consumer Survey Fusion" 
+                            class="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-500" 
+                        />
+                        <div class="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md px-2.5 py-1 rounded-md text-[10px] font-mono font-bold text-emerald-400 border border-slate-700">
+                            100M+ CONSUMER PROFILES
                         </div>
-                        <h4 class="text-base font-bold text-slate-900 mb-2">CivicScience Consumer Survey Fusion</h4>
-                        <p class="text-xs text-slate-600 leading-relaxed">
-                            Fuses large-scale daily consumer survey responses from CivicScience with live telecast viewership data to reveal consumer attitudes, purchasing intent, and brand affinity.
-                        </p>
                     </div>
-                    <div class="mt-6 pt-4 border-t border-slate-200 text-[11px] font-bold text-purple-700 flex items-center gap-1.5">
-                        <span class="w-1.5 h-1.5 rounded-full bg-purple-600"></span> Behavioral Survey & Attitudinal Fusion
+                    <div class="p-5 flex-1 flex flex-col justify-between">
+                        <div>
+                            <h4 class="text-base font-bold text-slate-900 mb-1.5">CivicScience Consumer Survey Fusion</h4>
+                            <p class="text-xs text-slate-600 leading-relaxed">
+                                Fuses real-time viewer stream telemetry with CivicScience consumer sentiment polls, converting passive viewer numbers into deep brand purchase intent and buyer behavior.
+                            </p>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-slate-200 text-[11px] font-bold text-emerald-700 flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> Attitudinal &amp; Purchase Intent Overlays
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </section>
+
 
     <!-- Product Solutions -->
     <section id="solutions" class="py-16 px-6 max-w-6xl mx-auto">
@@ -1100,42 +1175,62 @@ HTML_INTERFACE = """<!DOCTYPE html>
         </div>
     </section>
 
-    <!-- Company Leadership -->
-    <section id="leadership" class="py-16 bg-slate-900 text-white px-6">
+        <!-- Company Leadership -->
+    <section id="leadership" class="py-16 px-6 bg-slate-900 text-white w-full border-t border-slate-800">
         <div class="max-w-6xl mx-auto">
-            <div class="max-w-2xl mb-12">
-                <h2 class="text-xs font-extrabold uppercase tracking-widest text-sky-400 mb-2">Company Leadership</h2>
-                <h3 class="text-3xl font-black tracking-tight">Founded by Research Industry Veterans</h3>
-                <p class="text-xs sm:text-sm text-slate-400 mt-2">Tenetic was launched by industry pioneers with decades of leadership at firms including Media Metrix, The NPD Group, Comscore, McKinsey, and Boston Consulting Group.</p>
+            <div class="mb-10 text-center sm:text-left">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-sky-400 text-xs font-mono font-bold mb-2">
+                    <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+                    FOUNDED BY INDUSTRY VETERANS
+                </div>
+                <h3 class="text-2xl sm:text-3xl font-bold tracking-tight">Company Leadership</h3>
+                <p class="text-xs text-slate-400 mt-2 max-w-xl">
+                    Tenetic is led by measurement pioneers with decades of leadership in digital analytics, television ratings standards, and real-time consumer data.
+                </p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="bg-slate-800/90 border border-slate-700 p-6 rounded-2xl">
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                        <h4 class="text-lg font-bold text-white">Tod Johnson</h4>
-                        <span class="text-[10px] font-mono text-sky-400 bg-sky-950/80 border border-sky-800 px-2 py-0.5 rounded font-bold">Media Metrix Founder</span>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-slate-800/90 border border-slate-700 p-6 rounded-2xl flex flex-col sm:flex-row gap-5 items-start">
+                    <img 
+                        src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80" 
+                        alt="Tod Johnson" 
+                        class="w-24 h-24 rounded-2xl object-cover border-2 border-sky-500/40 shrink-0 shadow-md" 
+                    />
+                    <div class="flex-1 min-w-0">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <h4 class="text-lg font-bold text-white">Tod Johnson</h4>
+                            <span class="text-[10px] font-mono text-sky-400 bg-sky-950/80 border border-sky-800 px-2 py-0.5 rounded font-bold">Media Metrix Founder</span>
+                        </div>
+                        <div class="text-xs font-semibold text-sky-400 mt-0.5">Co-Founder &amp; Audience Measurement Pioneer</div>
+                        <div class="text-[10px] text-slate-400 font-mono mt-1">Former Exec Chairman, The NPD Group</div>
+                        <p class="text-xs text-slate-300 mt-3 leading-relaxed">
+                            Pioneer of modern digital audience measurement who built Media Metrix into the first universal digital ratings standard and served as Executive Chairman of The NPD Group. Tod brings decades of institutional research authority to Tenetic.
+                        </p>
                     </div>
-                    <div class="text-xs font-semibold text-sky-400 mt-0.5">Co-Founder & Audience Measurement Pioneer</div>
-                    <div class="text-[10px] text-slate-400 font-mono mt-1">Former Exec Chairman, The NPD Group</div>
-                    <p class="text-xs text-slate-300 mt-3 leading-relaxed">
-                        Pioneer of modern digital audience measurement who built Media Metrix into the first universal digital ratings standard and served as Executive Chairman of The NPD Group. Tod brings decades of institutional research authority to Tenetic.
-                    </p>
                 </div>
 
-                <div class="bg-slate-800/90 border border-slate-700 p-6 rounded-2xl">
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                        <h4 class="text-lg font-bold text-white">Chris Wilson</h4>
-                        <span class="text-[10px] font-mono text-indigo-400 bg-indigo-950/80 border border-indigo-800 px-2 py-0.5 rounded font-bold">Former EVP Comscore</span>
+                <div class="bg-slate-800/90 border border-slate-700 p-6 rounded-2xl flex flex-col sm:flex-row gap-5 items-start">
+                    <img 
+                        src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80" 
+                        alt="Chris Wilson" 
+                        class="w-24 h-24 rounded-2xl object-cover border-2 border-sky-500/40 shrink-0 shadow-md" 
+                    />
+                    <div class="flex-1 min-w-0">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <h4 class="text-lg font-bold text-white">Chris Wilson</h4>
+                            <span class="text-[10px] font-mono text-indigo-400 bg-indigo-950/80 border border-indigo-800 px-2 py-0.5 rounded font-bold">Former EVP Comscore</span>
+                        </div>
+                        <div class="text-xs font-semibold text-indigo-400 mt-0.5">Chief Executive Officer (CEO)</div>
+                        <div class="text-[10px] text-slate-400 font-mono mt-1">Veteran Media Measurement Executive</div>
+                        <p class="text-xs text-slate-300 mt-3 leading-relaxed">
+                            Accomplished senior media measurement executive leading Tenetic's national deployment across US live telecasts, streaming platforms, and broadcast networks to replace delayed monthly ratings with real-time Lakehouse intelligence.
+                        </p>
                     </div>
-                    <div class="text-xs font-semibold text-indigo-400 mt-0.5">Chief Executive Officer (CEO)</div>
-                    <div class="text-[10px] text-slate-400 font-mono mt-1">Veteran Media Measurement Executive</div>
-                    <p class="text-xs text-slate-300 mt-3 leading-relaxed">
-                        Accomplished senior media measurement executive leading Tenetic's national deployment across US live telecasts, streaming platforms, and broadcast networks to replace delayed monthly ratings with real-time Lakehouse intelligence.
-                    </p>
                 </div>
             </div>
         </div>
     </section>
+
 
     <!-- Footer -->
     <footer class="mt-auto border-t border-slate-200 bg-white px-6 py-8 text-xs text-slate-500">

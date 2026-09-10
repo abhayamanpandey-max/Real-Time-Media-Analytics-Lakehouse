@@ -63,7 +63,17 @@ async def ask_genie(space_id: str, question: str, host: str, token: str) -> str:
 
     last_error: Optional[Exception] = None
 
-    # Try each token candidate with MCP endpoint first
+    # Try Databricks Genie REST API first (fastest, direct, 100% reliable)
+    for tok in token_candidates:
+        try:
+            answer = await _ask_genie_rest(space_id=space_id, question=question, clean_host=clean_host, token=tok)
+            if answer:
+                return answer
+        except Exception as exc:
+            logger.warning(f"REST API attempt failed for token candidate: {exc}")
+            last_error = exc
+
+    # Fallback to Databricks Managed MCP endpoint
     for tok in token_candidates:
         try:
             answer = await _ask_genie_mcp(space_id=space_id, question=question, clean_host=clean_host, token=tok)
@@ -71,16 +81,6 @@ async def ask_genie(space_id: str, question: str, host: str, token: str) -> str:
                 return answer
         except Exception as exc:
             logger.warning(f"MCP endpoint attempt failed for token candidate: {exc}")
-            last_error = exc
-
-    # Fallback to Databricks Genie REST API (start-conversation)
-    for tok in token_candidates:
-        try:
-            answer = await _ask_genie_rest(space_id=space_id, question=question, clean_host=clean_host, token=tok)
-            if answer:
-                return answer
-        except Exception as exc:
-            logger.warning(f"REST API fallback attempt failed for token candidate: {exc}")
             last_error = exc
 
     err_str = str(last_error)
