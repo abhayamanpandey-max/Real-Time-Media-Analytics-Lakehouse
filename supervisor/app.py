@@ -80,6 +80,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         body { background-color: #f8fafc; color: #0f172a; font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; }
         .font-mono { font-family: 'JetBrains Mono', monospace !important; }
@@ -180,19 +181,53 @@ HTML_INTERFACE = """<!DOCTYPE html>
             }
         };
 
-        window.copyAnswerText = function(btn, textId) {
-            var el = document.getElementById(textId);
-            if (!el) return;
-            var text = el.innerText || el.textContent;
-            navigator.clipboard.writeText(text).then(function() {
+        window._ansRegistry = window._ansRegistry || {};
+
+        window.fallbackCopyText = function(text, cb) {
+            try {
+                var ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.top = '-9999px';
+                ta.style.left = '-9999px';
+                ta.setAttribute('readonly', '');
+                document.body.appendChild(ta);
+                ta.select();
+                ta.setSelectionRange(0, 99999);
+                var success = document.execCommand('copy');
+                document.body.removeChild(ta);
+                if (success && cb) cb();
+            } catch (err) {
+                console.error('Fallback copy error', err);
+            }
+        };
+
+        window.copyAnswerText = function(btn, targetId) {
+            var text = '';
+            if (window._ansRegistry && window._ansRegistry[targetId]) {
+                text = window._ansRegistry[targetId].cleanText;
+            }
+            if (!text) {
+                var el = document.getElementById(targetId + '_text') || document.getElementById(targetId);
+                if (el) text = el.innerText || el.textContent;
+            }
+            if (!text) return;
+
+            function showSuccess() {
                 if (btn) {
                     var orig = btn.innerHTML;
                     btn.innerHTML = '<span class="text-emerald-600 font-bold">✓ Copied!</span>';
                     setTimeout(function() { btn.innerHTML = orig; }, 2000);
                 }
-            }).catch(function() {
-                console.log('Copied to clipboard');
-            });
+            }
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(showSuccess).catch(function() {
+                    window.fallbackCopyText(text, showSuccess);
+                });
+            } else {
+                window.fallbackCopyText(text, showSuccess);
+            }
         };
 
         window.downloadResponseCSV = function(csvEncoded, filename) {
@@ -216,6 +251,199 @@ HTML_INTERFACE = """<!DOCTYPE html>
             var el = document.getElementById(lineageId);
             if (!el) return;
             el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
+        };
+
+        window.printReportFallback = function(reportHtml, onDone) {
+            var printWin = window.open('', '_blank', 'width=850,height=900');
+            if (printWin) {
+                printWin.document.write('<!DOCTYPE html><html><head><title>Tenetic Executive Brief</title><style>body { margin: 0; padding: 24px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; } @media print { body { padding: 0; } }</style></head><body>' + reportHtml + '</body></html>');
+                printWin.document.close();
+                printWin.focus();
+                setTimeout(function() {
+                    printWin.print();
+                    if (onDone) onDone();
+                }, 400);
+            } else {
+                alert('Please allow popups to view or print the PDF report.');
+                if (onDone) onDone();
+            }
+        };
+
+        window.exportResponsePDF = function(btn, msgId) {
+            var orig = btn ? btn.innerHTML : null;
+            if (btn) btn.innerHTML = '<span class="text-sky-600 font-bold">⏳ Exporting...</span>';
+
+            var item = (window._ansRegistry && window._ansRegistry[msgId]) || {};
+            var textEl = document.getElementById(msgId + '_text');
+            var bodyHtml = textEl ? textEl.innerHTML : ((item.cleanText || '').replace(/\n/g, '<br>'));
+            var cardEl = document.getElementById(msgId + '_card');
+            var tableHtml = '';
+            if (cardEl) {
+                var tbl = cardEl.querySelector('table');
+                if (tbl) {
+                    tableHtml = '<table style="width:100%; border-collapse:collapse; font-size:12px; font-family:sans-serif; text-align:left;">' + tbl.innerHTML + '</table>';
+                } else {
+                    tableHtml = cardEl.innerHTML;
+                }
+            }
+
+            var nowStr = new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+
+            var reportHtml = 
+                '<div style="font-family: \'Plus Jakarta Sans\', system-ui, -apple-system, sans-serif; color: #0f172a; padding: 28px; background: #ffffff; max-width: 800px; margin: 0 auto; line-height: 1.6;">' +
+                    '<div style="border-bottom: 2px solid #0284c7; padding-bottom: 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">' +
+                        '<div>' +
+                            '<div style="display: flex; align-items: center; gap: 8px;">' +
+                                '<span style="font-size: 22px; font-weight: 900; color: #0f172a; letter-spacing: -0.5px;">⚡ TENETIC</span>' +
+                                '<span style="background: #0284c7; color: #ffffff; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; text-transform: uppercase;">Media Lakehouse</span>' +
+                            '</div>' +
+                            '<div style="font-size: 12px; color: #64748b; margin-top: 4px;">Executive Media Intelligence & US Telecasts Brief</div>' +
+                        '</div>' +
+                        '<div style="text-align: right; font-size: 10px; font-family: monospace; color: #64748b;">' +
+                            '<div><strong>Generated:</strong> ' + nowStr + '</div>' +
+                            '<div style="color: #059669; font-weight: bold; margin-top: 2px;">● Databricks Lakehouse Live</div>' +
+                        '</div>' +
+                    '</div>' +
+
+                    '<div style="margin-bottom: 24px;">' +
+                        '<div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #0284c7; letter-spacing: 0.5px; margin-bottom: 8px;">Executive Response & Analysis</div>' +
+                        '<div style="font-size: 13px; color: #1e293b; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px;">' +
+                            bodyHtml +
+                        '</div>' +
+                    '</div>' +
+
+                    (tableHtml ? (
+                        '<div style="margin-bottom: 24px;">' +
+                            '<div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #0284c7; letter-spacing: 0.5px; margin-bottom: 8px;">Structured Telemetry & Metric Breakdown</div>' +
+                            '<div style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #ffffff; padding: 12px;">' +
+                                tableHtml +
+                            '</div>' +
+                        '</div>'
+                    ) : '') +
+
+                    '<div style="border-top: 1px solid #e2e8f0; padding-top: 14px; margin-top: 24px; font-size: 10px; font-family: monospace; color: #64748b; display: flex; justify-content: space-between; align-items: center;">' +
+                        '<div>' +
+                            '<strong>Source Lakehouse:</strong> gold.sem_audience_rankings / sem_engagement_depth<br>' +
+                            '<strong>Engine:</strong> Databricks Genie AI Lakehouse Agent (v2.4) • Verified Semantic Layer' +
+                        '</div>' +
+                        '<div style="text-align: right;">' +
+                            '<span>Tenetic Confidential • US Operations</span>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+
+            function finish() {
+                if (btn && orig) btn.innerHTML = orig;
+            }
+
+            if (typeof html2pdf !== 'undefined') {
+                var tempDiv = document.createElement('div');
+                tempDiv.style.position = 'fixed';
+                tempDiv.style.left = '-9999px';
+                tempDiv.style.top = '0';
+                tempDiv.style.width = '800px';
+                tempDiv.innerHTML = reportHtml;
+                document.body.appendChild(tempDiv);
+
+                var opt = {
+                    margin: 10,
+                    filename: 'tenetic_executive_brief_' + msgId + '.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+
+                html2pdf().set(opt).from(tempDiv).save().then(function() {
+                    document.body.removeChild(tempDiv);
+                    finish();
+                }).catch(function(err) {
+                    console.error('html2pdf error, falling back to print', err);
+                    document.body.removeChild(tempDiv);
+                    window.printReportFallback(reportHtml, finish);
+                });
+            } else {
+                window.printReportFallback(reportHtml, finish);
+            }
+        };
+
+        window.exportFullChatPDF = function(btn) {
+            var orig = btn ? btn.innerHTML : null;
+            if (btn) btn.innerHTML = '<span>⏳ Exporting...</span>';
+
+            var feed = document.getElementById('chatFeed');
+            if (!feed) {
+                if (btn && orig) btn.innerHTML = orig;
+                return;
+            }
+
+            var nowStr = new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+            var feedClone = feed.cloneNode(true);
+            var buttonsToRemove = feedClone.querySelectorAll('button');
+            buttonsToRemove.forEach(function(b) { b.remove(); });
+
+            var fullReportHtml = 
+                '<div style="font-family: \'Plus Jakarta Sans\', system-ui, -apple-system, sans-serif; color: #0f172a; padding: 28px; background: #ffffff; max-width: 800px; margin: 0 auto; line-height: 1.6;">' +
+                    '<div style="border-bottom: 2px solid #0284c7; padding-bottom: 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">' +
+                        '<div>' +
+                            '<div style="display: flex; align-items: center; gap: 8px;">' +
+                                '<span style="font-size: 22px; font-weight: 900; color: #0f172a; letter-spacing: -0.5px;">⚡ TENETIC</span>' +
+                                '<span style="background: #0284c7; color: #ffffff; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; text-transform: uppercase;">Lakehouse Intelligence</span>' +
+                            '</div>' +
+                            '<div style="font-size: 12px; color: #64748b; margin-top: 4px;">Full Executive Session Transcript & Analytics Dossier</div>' +
+                        '</div>' +
+                        '<div style="text-align: right; font-size: 10px; font-family: monospace; color: #64748b;">' +
+                            '<div><strong>Exported:</strong> ' + nowStr + '</div>' +
+                            '<div style="color: #059669; font-weight: bold; margin-top: 2px;">● Databricks Lakehouse Verified</div>' +
+                        '</div>' +
+                    '</div>' +
+
+                    '<div style="margin-bottom: 24px;">' +
+                        feedClone.innerHTML +
+                    '</div>' +
+
+                    '<div style="border-top: 1px solid #e2e8f0; padding-top: 14px; margin-top: 24px; font-size: 10px; font-family: monospace; color: #64748b; display: flex; justify-content: space-between; align-items: center;">' +
+                        '<div>' +
+                            '<strong>Source Lakehouse:</strong> gold.sem_audience_rankings / sem_engagement_depth<br>' +
+                            '<strong>Engine:</strong> Databricks Genie AI Lakehouse Agent (v2.4) • Verified Semantic Layer' +
+                        '</div>' +
+                        '<div style="text-align: right;">' +
+                            '<span>Tenetic Confidential • US Operations</span>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+
+            function finish() {
+                if (btn && orig) btn.innerHTML = orig;
+            }
+
+            if (typeof html2pdf !== 'undefined') {
+                var tempDiv = document.createElement('div');
+                tempDiv.style.position = 'fixed';
+                tempDiv.style.left = '-9999px';
+                tempDiv.style.top = '0';
+                tempDiv.style.width = '800px';
+                tempDiv.innerHTML = fullReportHtml;
+                document.body.appendChild(tempDiv);
+
+                var opt = {
+                    margin: 10,
+                    filename: 'tenetic_session_dossier_' + Date.now() + '.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+
+                html2pdf().set(opt).from(tempDiv).save().then(function() {
+                    document.body.removeChild(tempDiv);
+                    finish();
+                }).catch(function(err) {
+                    console.error('html2pdf session error', err);
+                    document.body.removeChild(tempDiv);
+                    window.printReportFallback(fullReportHtml, finish);
+                });
+            } else {
+                window.printReportFallback(fullReportHtml, finish);
+            }
         };
 
         window.generateFollowUpChips = function(cleanText) {
@@ -410,6 +638,13 @@ HTML_INTERFACE = """<!DOCTYPE html>
         };
 
         window.wrapSideBySide = function(textHtml, cardHtml, msgId, csvEncoded, cleanText) {
+            window._ansRegistry = window._ansRegistry || {};
+            window._ansRegistry[msgId] = {
+                cleanText: cleanText,
+                textHtml: textHtml,
+                cardHtml: cardHtml
+            };
+
             var csvBtnHtml = '';
             if (csvEncoded) {
                 csvBtnHtml = '<button type="button" onclick="window.downloadResponseCSV(\\'' + csvEncoded + '\\', \\'tenetic_lakehouse_data.csv\\')" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors cursor-pointer text-[10px]">' +
@@ -419,15 +654,18 @@ HTML_INTERFACE = """<!DOCTYPE html>
 
             var followUpsHtml = window.generateFollowUpChips(cleanText);
 
-            return '<div class="w-full">' +
+            return '<div id="' + msgId + '_container" class="w-full">' +
                 '<div class="flex flex-col lg:flex-row gap-4 items-start justify-between w-full">' +
                 '<div id="' + msgId + '_text" class="flex-1 min-w-0 pr-1 leading-relaxed text-slate-800">' + textHtml + '</div>' +
-                (cardHtml ? '<div class="w-full lg:w-[320px] shrink-0">' + cardHtml + '</div>' : '') +
+                (cardHtml ? '<div id="' + msgId + '_card" class="w-full lg:w-[320px] shrink-0">' + cardHtml + '</div>' : '') +
                 '</div>' +
                 '<div class="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">' +
-                '<div class="flex items-center gap-1.5">' +
-                '<button type="button" onclick="window.copyAnswerText(this, \\'' + msgId + '_text\\')" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors cursor-pointer text-[10px]">' +
+                '<div class="flex items-center gap-1.5 flex-wrap">' +
+                '<button type="button" onclick="window.copyAnswerText(this, \\'' + msgId + '\\')" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors cursor-pointer text-[10px]">' +
                 '<span>📋</span> <span>Copy Brief</span>' +
+                '</button>' +
+                '<button type="button" onclick="window.exportResponsePDF(this, \\'' + msgId + '\\')" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors cursor-pointer text-[10px]">' +
+                '<span>📄</span> <span>Export PDF</span>' +
                 '</button>' +
                 csvBtnHtml +
                 '<button type="button" onclick="window.toggleLineage(\\'' + msgId + '_lineage\\')" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium transition-colors cursor-pointer text-[10px]">' +
@@ -881,6 +1119,13 @@ HTML_INTERFACE = """<!DOCTYPE html>
                 </div>
             </div>
             <div class="flex items-center gap-2">
+                <button 
+                    onclick="window.exportFullChatPDF(this)" 
+                    title="Export Full Session to PDF" 
+                    class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer border border-slate-700 shadow-sm"
+                >
+                    <span>📄</span> <span class="hidden sm:inline">Export Session (PDF)</span><span class="sm:hidden">PDF</span>
+                </button>
                 <button 
                     onclick="window.toggleFullscreenChat()" 
                     id="fullscreenToggleBtn" 
