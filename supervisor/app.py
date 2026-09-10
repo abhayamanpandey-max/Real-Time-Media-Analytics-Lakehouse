@@ -286,7 +286,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
 
             var item = (window._ansRegistry && window._ansRegistry[msgId]) || {};
             var textEl = document.getElementById(msgId + '_text');
-            var bodyHtml = textEl ? textEl.innerHTML : ((item.cleanText || '').replace(/\n/g, '<br>'));
+            var bodyHtml = textEl ? textEl.innerHTML : ((item.cleanText || '').split(String.fromCharCode(10)).join('<br>'));
             var cardEl = document.getElementById(msgId + '_card');
             var tableHtml = '';
             if (cardEl) {
@@ -301,7 +301,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
             var nowStr = new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
 
             var reportHtml = 
-                '<div style="font-family: \'Plus Jakarta Sans\', system-ui, -apple-system, sans-serif; color: #0f172a; padding: 28px; background: #ffffff; max-width: 800px; margin: 0 auto; line-height: 1.6;">' +
+                '<div style="font-family: system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; color: #0f172a; padding: 28px; background: #ffffff; max-width: 800px; margin: 0 auto; line-height: 1.6;">' +
                     '<div style="border-bottom: 2px solid #0284c7; padding-bottom: 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">' +
                         '<div>' +
                             '<div style="display: flex; align-items: center; gap: 8px;">' +
@@ -393,7 +393,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
             buttonsToRemove.forEach(function(b) { b.remove(); });
 
             var fullReportHtml = 
-                '<div style="font-family: \'Plus Jakarta Sans\', system-ui, -apple-system, sans-serif; color: #0f172a; padding: 28px; background: #ffffff; max-width: 800px; margin: 0 auto; line-height: 1.6;">' +
+                '<div style="font-family: system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; color: #0f172a; padding: 28px; background: #ffffff; max-width: 800px; margin: 0 auto; line-height: 1.6;">' +
                     '<div style="border-bottom: 2px solid #0284c7; padding-bottom: 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">' +
                         '<div>' +
                             '<div style="display: flex; align-items: center; gap: 8px;">' +
@@ -698,7 +698,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
         window.formatBusinessAnswer = function(rawAnswer) {
             var msgId = 'ans_' + Math.random().toString(36).substr(2, 7);
             var clean = rawAnswer.replace(/```sql[\\s\\S]*?```/gi, '').replace(/\\*\\*Generated SQL Query:\\*\\*/gi, '').trim();
-            var html = (typeof marked !== 'undefined') ? marked.parse(clean) : clean.replace(/\\n/g, '<br>');
+            var html = (typeof marked !== 'undefined') ? marked.parse(clean) : clean.split(String.fromCharCode(10)).join('<br>');
 
             // 1. Check for Pie / Donut Chart (Percentage distributions)
             var pieRegex = /\*\*([^*]+)\*\*[:\s]*\(?([0-9]+(?:\.[0-9]+)?)\s*%/g;
@@ -733,7 +733,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
             }
 
             if (kvMatches.length === 0) {
-                var fallbackRegex = /[-*•]?\s*\*?\*?([^:\d\n]+?)\*?\*?:\s*\$?([0-9,]+(?:\.[0-9]+)?)/g;
+                var fallbackRegex = /[-*•]?\s*\*?\*?([^:\d\\n]+?)\*?\*?:\s*\$?([0-9,]+(?:\.[0-9]+)?)/g;
                 var fbMatch;
                 while ((fbMatch = fallbackRegex.exec(clean)) !== null) {
                     var fbLabel = fbMatch[1].replace(/[*_]/g, '').trim();
@@ -876,7 +876,6 @@ HTML_INTERFACE = """<!DOCTYPE html>
             <a href="#telecasts" class="hover:text-sky-600 transition-colors">Live Telecasts & Coverage</a>
             <a href="#solutions" class="hover:text-sky-600 transition-colors">Solutions</a>
             <a href="#leadership" class="hover:text-sky-600 transition-colors">Leadership</a>
-            <a href="#technology" class="hover:text-sky-600 transition-colors">Lakehouse Tech</a>
         </nav>
 
         <div class="flex items-center gap-3">
