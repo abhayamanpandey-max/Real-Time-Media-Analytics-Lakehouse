@@ -75,10 +75,14 @@ HTML_INTERFACE = """<!DOCTYPE html>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tenetic | Real-Time Media Intelligence & Live Telecast Analytics</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        body { background-color: #f8fafc; color: #0f172a; font-family: system-ui, -apple-system, sans-serif; }
+        body { background-color: #f8fafc; color: #0f172a; font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace !important; }
         .markdown-body strong { color: #0369a1; font-weight: 600; }
         .markdown-body p { margin-bottom: 0.5rem; line-height: 1.5; }
         .markdown-body ul { list-style-type: disc; margin-left: 1.25rem; margin-bottom: 0.5rem; }
@@ -98,6 +102,19 @@ HTML_INTERFACE = """<!DOCTYPE html>
             border-radius: 0px !important;
             z-index: 999999 !important;
         }
+
+        /* SVG Donut Hover Animation */
+        .pie-slice {
+            transition: stroke-width 0.25s ease, stroke 0.25s ease;
+        }
+        .pie-slice:hover {
+            stroke-width: 6.5;
+            cursor: pointer;
+        }
+
+        /* Custom Scrollbar */
+        .scrollbar-none::-webkit-scrollbar { display: none; }
+        .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 
     <script>
@@ -144,7 +161,106 @@ HTML_INTERFACE = """<!DOCTYPE html>
             return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         };
 
+        window.switchCardView = function(uid, view) {
+            var chartEl = document.getElementById(uid + '_chart');
+            var tableEl = document.getElementById(uid + '_table');
+            var btnChart = document.getElementById(uid + '_btn_chart');
+            var btnTable = document.getElementById(uid + '_btn_table');
+            if (!chartEl || !tableEl) return;
+            if (view === 'table') {
+                chartEl.style.display = 'none';
+                tableEl.style.display = 'block';
+                if (btnChart) { btnChart.className = 'px-2 py-0.5 rounded font-medium text-slate-500 hover:text-slate-800 cursor-pointer transition-colors'; }
+                if (btnTable) { btnTable.className = 'px-2 py-0.5 rounded font-bold bg-white text-slate-900 shadow-xs cursor-pointer transition-colors'; }
+            } else {
+                chartEl.style.display = 'block';
+                tableEl.style.display = 'none';
+                if (btnChart) { btnChart.className = 'px-2 py-0.5 rounded font-bold bg-white text-slate-900 shadow-xs cursor-pointer transition-colors'; }
+                if (btnTable) { btnTable.className = 'px-2 py-0.5 rounded font-medium text-slate-500 hover:text-slate-800 cursor-pointer transition-colors'; }
+            }
+        };
+
+        window.copyAnswerText = function(btn, textId) {
+            var el = document.getElementById(textId);
+            if (!el) return;
+            var text = el.innerText || el.textContent;
+            navigator.clipboard.writeText(text).then(function() {
+                if (btn) {
+                    var orig = btn.innerHTML;
+                    btn.innerHTML = '<span class="text-emerald-600 font-bold">✓ Copied!</span>';
+                    setTimeout(function() { btn.innerHTML = orig; }, 2000);
+                }
+            }).catch(function() {
+                console.log('Copied to clipboard');
+            });
+        };
+
+        window.downloadResponseCSV = function(csvEncoded, filename) {
+            try {
+                var csv = decodeURIComponent(csvEncoded);
+                var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                var url = URL.createObjectURL(blob);
+                var link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', filename || 'tenetic_lakehouse_data.csv');
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            } catch(e) {
+                console.error('CSV export failed', e);
+            }
+        };
+
+        window.toggleLineage = function(lineageId) {
+            var el = document.getElementById(lineageId);
+            if (!el) return;
+            el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
+        };
+
+        window.generateFollowUpChips = function(cleanText) {
+            var suggestions = [];
+            var text = (cleanText || '').toLowerCase();
+            if (text.indexOf('platform') !== -1 || text.indexOf('connected tv') !== -1 || text.indexOf('browser') !== -1) {
+                suggestions = [
+                    { label: "📊 Top 5 US Properties", query: "What are the top 5 properties by audience share in the US?" },
+                    { label: "💰 Content Watch Time", query: "Show top 5 content titles by total watch time in seconds" },
+                    { label: "🏆 #1 Audience Leader", query: "Which property had the highest total audience in the most recent monthly period?" }
+                ];
+            } else if (text.indexOf('watch time') !== -1 || text.indexOf('content title') !== -1 || text.indexOf('seconds') !== -1) {
+                suggestions = [
+                    { label: "🍩 Platform Share Breakdown", query: "What is the audience profile breakdown by platform?" },
+                    { label: "📱 Top Ad Brands", query: "Show top ad categories by audience" },
+                    { label: "📊 Top Properties in US", query: "What are the top 5 properties by audience share in the US?" }
+                ];
+            } else if (text.indexOf('ad') !== -1 || text.indexOf('brand') !== -1 || text.indexOf('adidas') !== -1) {
+                suggestions = [
+                    { label: "📊 Top Properties by Share", query: "What are the top 5 properties by audience share in the US?" },
+                    { label: "🍩 Platform Share", query: "What is the audience profile breakdown by platform?" },
+                    { label: "💰 Content Watch Time", query: "Show top 5 content titles by total watch time in seconds" }
+                ];
+            } else {
+                suggestions = [
+                    { label: "🍩 Platform Share", query: "What is the audience profile breakdown by platform?" },
+                    { label: "💰 Top Content Watch Time", query: "Show top 5 content titles by total watch time in seconds" },
+                    { label: "📱 Top Ad Brands", query: "Show top ad categories by audience" }
+                ];
+            }
+
+            var chipsHtml = suggestions.map(function(s) {
+                return '<button type="button" onclick="window.sendQuickQuery(\\'' + s.query.replace(/'/g, "\\\\'") + '\\', this)" class="bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200/80 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-all hover:scale-[1.02] cursor-pointer shadow-2xs">' + s.label + '</button>';
+            }).join(' ');
+
+            return '<div class="mt-3 pt-2.5 border-t border-slate-200/60">' +
+                '<div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">' +
+                '<span>💡 Next Best Questions</span>' +
+                '</div>' +
+                '<div class="flex flex-wrap gap-1.5">' + chipsHtml + '</div>' +
+                '</div>';
+        };
+
         window.renderPieChart = function(items, title) {
+            var uid = 'pie_' + Math.random().toString(36).substr(2, 7);
             var colors = ['#0284c7', '#6366f1', '#a855f7', '#10b981', '#f59e0b', '#ec4899'];
             var total = 0;
             for (var i = 0; i < items.length; i++) { total += items[i].val; }
@@ -152,6 +268,7 @@ HTML_INTERFACE = """<!DOCTYPE html>
 
             var svgSlices = '';
             var legendHtml = '';
+            var tableRows = '';
             var currentOffset = 25.0; // 12 o'clock
 
             for (var j = 0; j < Math.min(items.length, 6); j++) {
@@ -161,26 +278,42 @@ HTML_INTERFACE = """<!DOCTYPE html>
                 var dash = pct.toFixed(2) + ' ' + (100.0 - pct).toFixed(2);
                 var offset = currentOffset.toFixed(2);
 
-                svgSlices += '<circle cx="21" cy="21" r="15.915" fill="transparent" stroke="' + color + '" stroke-width="5" stroke-dasharray="' + dash + '" stroke-dashoffset="' + offset + '"></circle>';
+                svgSlices += '<circle cx="21" cy="21" r="15.915" fill="transparent" stroke="' + color + '" stroke-width="5" stroke-dasharray="' + dash + '" stroke-dashoffset="' + offset + '" class="pie-slice"><title>' + window.escapeHtml(item.label) + ': ' + item.val.toFixed(1) + '%</title></circle>';
                 currentOffset -= pct;
 
-                legendHtml += '<div class="flex items-center justify-between text-[11px] gap-2">' +
+                legendHtml += '<div class="flex items-center justify-between text-[11px] gap-2 hover:bg-slate-50 px-1 py-0.5 rounded transition-colors">' +
                     '<span class="flex items-center gap-1.5 truncate"><span class="w-2 h-2 rounded-full shrink-0" style="background:' + color + '"></span><span class="truncate text-slate-700 font-medium">' + window.escapeHtml(item.label) + '</span></span>' +
                     '<span class="font-mono text-slate-900 font-bold ml-1 shrink-0">' + item.val.toFixed(1) + '%</span>' +
                     '</div>';
+
+                tableRows += '<tr class="border-b border-slate-100 last:border-0">' +
+                    '<td class="py-1 text-slate-500">' + (j+1) + '</td>' +
+                    '<td class="py-1 font-medium text-slate-800 truncate max-w-[120px]">' + window.escapeHtml(item.label) + '</td>' +
+                    '<td class="py-1 text-right font-mono font-bold text-sky-700">' + item.val.toFixed(1) + '%</td>' +
+                    '</tr>';
             }
 
-            return '<div class="p-3.5 bg-white border border-slate-200 rounded-xl text-xs shadow-sm">' +
-                '<div class="font-bold text-slate-900 mb-2 flex items-center justify-between">' +
-                '<span class="flex items-center gap-1.5">🍩 ' + (title || 'Distribution Breakdown') + '</span>' +
-                '<span class="text-[10px] text-sky-700 font-mono font-semibold">Pie Share</span>' +
+            return '<div class="p-3.5 bg-white border border-slate-200/80 rounded-2xl text-xs shadow-xs">' +
+                '<div class="font-bold text-slate-900 mb-2 flex items-center justify-between gap-2">' +
+                '<span class="flex items-center gap-1.5 truncate">🍩 ' + (title || 'Distribution Breakdown') + '</span>' +
+                '<div class="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg text-[10px] shrink-0 font-medium">' +
+                '<button type="button" onclick="window.switchCardView(\\'' + uid + '\\', \\'chart\\')" id="' + uid + '_btn_chart" class="px-2 py-0.5 rounded font-bold bg-white text-slate-900 shadow-xs cursor-pointer">Chart</button>' +
+                '<button type="button" onclick="window.switchCardView(\\'' + uid + '\\', \\'table\\')" id="' + uid + '_btn_table" class="px-2 py-0.5 rounded font-medium text-slate-500 hover:text-slate-800 cursor-pointer">Table</button>' +
                 '</div>' +
-                '<div class="flex items-center gap-3.5">' +
+                '</div>' +
+                '<div id="' + uid + '_chart" class="flex items-center gap-3.5">' +
                 '<div class="shrink-0">' +
                 '<svg viewBox="0 0 42 42" class="w-20 h-20 transform -rotate-90">' + svgSlices + '</svg>' +
                 '</div>' +
                 '<div class="grid grid-cols-1 gap-1 flex-1 min-w-0">' + legendHtml + '</div>' +
-                '</div></div>';
+                '</div>' +
+                '<div id="' + uid + '_table" style="display:none;" class="overflow-x-auto">' +
+                '<table class="w-full text-[11px] text-left">' +
+                '<thead><tr class="border-b border-slate-200 text-slate-500 font-semibold"><th class="pb-1">#</th><th class="pb-1">Platform</th><th class="pb-1 text-right">Share %</th></tr></thead>' +
+                '<tbody>' + tableRows + '</tbody>' +
+                '</table>' +
+                '</div>' +
+                '</div>';
         };
 
         window.renderComparisonGraph = function(items) {
@@ -192,42 +325,57 @@ HTML_INTERFACE = """<!DOCTYPE html>
             var pctDiff = itemB.val > 0 ? (((itemA.val - itemB.val) / itemB.val) * 100).toFixed(1) : 0;
             var isHigherA = itemA.val >= itemB.val;
 
-            return '<div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs shadow-sm">' +
+            return '<div class="p-3.5 bg-slate-50/80 border border-slate-200/80 rounded-2xl text-xs shadow-xs">' +
                 '<div class="font-bold text-slate-900 mb-2.5 flex items-center justify-between">' +
                 '<span class="flex items-center gap-1.5">⚖️ Head-to-Head Comparison</span>' +
                 '<span class="text-[10px] bg-sky-100 text-sky-700 px-2 py-0.5 rounded-full font-bold">Δ ' + Math.abs(pctDiff) + '%</span>' +
                 '</div>' +
                 '<div class="grid grid-cols-2 gap-2 mb-1">' +
-                '<div class="p-2.5 bg-white border ' + (isHigherA ? 'border-sky-300 ring-1 ring-sky-200' : 'border-slate-200') + ' rounded-lg">' +
+                '<div class="p-2.5 bg-white border ' + (isHigherA ? 'border-sky-300 ring-1 ring-sky-200' : 'border-slate-200') + ' rounded-xl">' +
                 '<div class="flex items-center justify-between text-[10px] text-slate-500 font-semibold">' +
                 '<span class="truncate">' + window.escapeHtml(itemA.label) + '</span>' +
                 (isHigherA ? '<span class="text-[9px] text-sky-600 font-bold">LEADER</span>' : '') +
                 '</div>' +
-                '<div class="text-sm font-black text-sky-700 mt-1">' + itemA.raw + '</div>' +
+                '<div class="text-sm font-black text-sky-700 mt-1 font-mono">' + itemA.raw + '</div>' +
                 '<div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1.5"><div class="bg-sky-600 h-full rounded-full" style="width:' + pctA + '%"></div></div>' +
                 '</div>' +
-                '<div class="p-2.5 bg-white border ' + (!isHigherA ? 'border-sky-300 ring-1 ring-sky-200' : 'border-slate-200') + ' rounded-lg">' +
+                '<div class="p-2.5 bg-white border ' + (!isHigherA ? 'border-sky-300 ring-1 ring-sky-200' : 'border-slate-200') + ' rounded-xl">' +
                 '<div class="flex items-center justify-between text-[10px] text-slate-500 font-semibold">' +
                 '<span class="truncate">' + window.escapeHtml(itemB.label) + '</span>' +
                 (!isHigherA ? '<span class="text-[9px] text-sky-600 font-bold">LEADER</span>' : '') +
                 '</div>' +
-                '<div class="text-sm font-black text-slate-700 mt-1">' + itemB.raw + '</div>' +
+                '<div class="text-sm font-black text-slate-700 mt-1 font-mono">' + itemB.raw + '</div>' +
                 '<div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1.5"><div class="bg-slate-400 h-full rounded-full" style="width:' + pctB + '%"></div></div>' +
                 '</div>' +
                 '</div></div>';
         };
 
         window.renderBarGraph = function(items, title) {
+            var uid = 'bar_' + Math.random().toString(36).substr(2, 7);
             var maxVal = Math.max.apply(null, items.map(function(i) { return i.val; }));
             var colors = ['bg-sky-600', 'bg-indigo-600', 'bg-purple-600', 'bg-emerald-600', 'bg-amber-600'];
-            var barsHtml = items.slice(0, 5).map(function(item, idx) {
+            var badgeStyles = [
+                'bg-amber-100 text-amber-800 border-amber-300',
+                'bg-slate-200 text-slate-700 border-slate-300',
+                'bg-orange-100 text-orange-800 border-orange-200',
+                'bg-slate-100 text-slate-600 border-slate-200',
+                'bg-slate-100 text-slate-600 border-slate-200'
+            ];
+
+            var barsHtml = '';
+            var tableRows = '';
+
+            for (var idx = 0; idx < Math.min(items.length, 5); idx++) {
+                var item = items[idx];
                 var pct = maxVal > 0 ? Math.round((item.val / maxVal) * 100) : 0;
                 var color = colors[idx % colors.length];
-                return '<div>' +
+                var badge = badgeStyles[idx % badgeStyles.length];
+
+                barsHtml += '<div title="' + window.escapeHtml(item.label) + ': ' + item.raw + '" class="hover:bg-slate-50 p-1 rounded-lg transition-colors">' +
                     '<div class="flex justify-between text-[11px] font-semibold text-slate-700 mb-1">' +
                     '<span class="flex items-center gap-1.5 truncate">' +
-                    '<span class="w-4 h-4 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-[9px] font-bold shrink-0">#' + (idx+1) + '</span>' +
-                    '<span class="truncate">' + window.escapeHtml(item.label) + '</span>' +
+                    '<span class="w-4 h-4 rounded-full ' + badge + ' border flex items-center justify-center text-[9px] font-bold shrink-0">#' + (idx+1) + '</span>' +
+                    '<span class="truncate text-slate-800">' + window.escapeHtml(item.label) + '</span>' +
                     '</span>' +
                     '<span class="font-mono text-slate-900 font-bold ml-2 shrink-0">' + item.raw + '</span>' +
                     '</div>' +
@@ -235,26 +383,71 @@ HTML_INTERFACE = """<!DOCTYPE html>
                     '<div class="' + color + ' h-full rounded-full transition-all duration-500" style="width:' + pct + '%"></div>' +
                     '</div>' +
                     '</div>';
-            }).join('');
 
-            return '<div class="p-3.5 bg-white border border-slate-200 rounded-xl text-xs shadow-sm">' +
-                '<div class="font-bold text-slate-900 mb-2.5 flex items-center justify-between">' +
-                '<span class="flex items-center gap-1.5">📊 ' + (title || 'Ranked Comparison') + '</span>' +
-                '<span class="text-[10px] text-sky-700 font-mono font-semibold">Real-Time Lakehouse</span>' +
+                tableRows += '<tr class="border-b border-slate-100 last:border-0">' +
+                    '<td class="py-1 font-bold text-slate-500">#' + (idx+1) + '</td>' +
+                    '<td class="py-1 font-medium text-slate-800 truncate max-w-[120px]">' + window.escapeHtml(item.label) + '</td>' +
+                    '<td class="py-1 text-right font-mono font-bold text-sky-700">' + item.raw + '</td>' +
+                    '</tr>';
+            }
+
+            return '<div class="p-3.5 bg-white border border-slate-200/80 rounded-2xl text-xs shadow-xs">' +
+                '<div class="font-bold text-slate-900 mb-2 flex items-center justify-between gap-2">' +
+                '<span class="flex items-center gap-1.5 truncate">📊 ' + (title || 'Ranked Comparison') + '</span>' +
+                '<div class="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg text-[10px] shrink-0 font-medium">' +
+                '<button type="button" onclick="window.switchCardView(\\'' + uid + '\\', \\'chart\\')" id="' + uid + '_btn_chart" class="px-2 py-0.5 rounded font-bold bg-white text-slate-900 shadow-xs cursor-pointer">Chart</button>' +
+                '<button type="button" onclick="window.switchCardView(\\'' + uid + '\\', \\'table\\')" id="' + uid + '_btn_table" class="px-2 py-0.5 rounded font-medium text-slate-500 hover:text-slate-800 cursor-pointer">Table</button>' +
                 '</div>' +
-                '<div class="space-y-2">' + barsHtml + '</div>' +
+                '</div>' +
+                '<div id="' + uid + '_chart" class="space-y-1.5">' + barsHtml + '</div>' +
+                '<div id="' + uid + '_table" style="display:none;" class="overflow-x-auto">' +
+                '<table class="w-full text-[11px] text-left">' +
+                '<thead><tr class="border-b border-slate-200 text-slate-500 font-semibold"><th class="pb-1">Rank</th><th class="pb-1">Entity</th><th class="pb-1 text-right">Value</th></tr></thead>' +
+                '<tbody>' + tableRows + '</tbody>' +
+                '</table>' +
+                '</div>' +
                 '</div>';
         };
 
-        window.wrapSideBySide = function(textHtml, cardHtml) {
-            if (!cardHtml) return textHtml;
-            return '<div class="flex flex-col lg:flex-row gap-4 items-start justify-between w-full">' +
-                '<div class="flex-1 min-w-0 pr-1 leading-relaxed">' + textHtml + '</div>' +
-                '<div class="w-full lg:w-[320px] shrink-0">' + cardHtml + '</div>' +
+        window.wrapSideBySide = function(textHtml, cardHtml, msgId, csvEncoded, cleanText) {
+            var csvBtnHtml = '';
+            if (csvEncoded) {
+                csvBtnHtml = '<button type="button" onclick="window.downloadResponseCSV(\\'' + csvEncoded + '\\', \\'tenetic_lakehouse_data.csv\\')" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors cursor-pointer text-[10px]">' +
+                    '<span>📥</span> <span>Export CSV</span>' +
+                    '</button>';
+            }
+
+            var followUpsHtml = window.generateFollowUpChips(cleanText);
+
+            return '<div class="w-full">' +
+                '<div class="flex flex-col lg:flex-row gap-4 items-start justify-between w-full">' +
+                '<div id="' + msgId + '_text" class="flex-1 min-w-0 pr-1 leading-relaxed text-slate-800">' + textHtml + '</div>' +
+                (cardHtml ? '<div class="w-full lg:w-[320px] shrink-0">' + cardHtml + '</div>' : '') +
+                '</div>' +
+                '<div class="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">' +
+                '<div class="flex items-center gap-1.5">' +
+                '<button type="button" onclick="window.copyAnswerText(this, \\'' + msgId + '_text\\')" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors cursor-pointer text-[10px]">' +
+                '<span>📋</span> <span>Copy Brief</span>' +
+                '</button>' +
+                csvBtnHtml +
+                '<button type="button" onclick="window.toggleLineage(\\'' + msgId + '_lineage\\')" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium transition-colors cursor-pointer text-[10px]">' +
+                '<span>🔍</span> <span>Lineage</span>' +
+                '</button>' +
+                '</div>' +
+                '<div class="text-[10px] text-slate-400 font-mono flex items-center gap-1.5">' +
+                '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Databricks Photon • Live' +
+                '</div>' +
+                '</div>' +
+                '<div id="' + msgId + '_lineage" style="display:none;" class="mt-2 p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-[10px] font-mono text-slate-600 leading-relaxed">' +
+                '<span class="font-bold text-sky-700">Source Lakehouse:</span> gold.sem_audience_rankings / sem_engagement_depth<br>' +
+                '<span class="font-bold text-sky-700">Engine:</span> Databricks Genie AI Lakehouse Agent (v2.4) • Verified Semantic Layer' +
+                '</div>' +
+                followUpsHtml +
                 '</div>';
         };
 
         window.formatBusinessAnswer = function(rawAnswer) {
+            var msgId = 'ans_' + Math.random().toString(36).substr(2, 7);
             var clean = rawAnswer.replace(/```sql[\\s\\S]*?```/gi, '').replace(/\\*\\*Generated SQL Query:\\*\\*/gi, '').trim();
             var html = (typeof marked !== 'undefined') ? marked.parse(clean) : clean.replace(/\\n/g, '<br>');
 
@@ -270,8 +463,11 @@ HTML_INTERFACE = """<!DOCTYPE html>
                 }
             }
             if (pieMatches.length >= 3) {
+                var pieCsvRows = ["Platform / Entity,Share %"];
+                for (var pi = 0; pi < pieMatches.length; pi++) { pieCsvRows.push('"' + pieMatches[pi].label + '","' + pieMatches[pi].raw + '"'); }
+                var pieCsv = encodeURIComponent(pieCsvRows.join('\\n'));
                 var pieChart = window.renderPieChart(pieMatches, 'Distribution Breakdown');
-                return window.wrapSideBySide(html, pieChart);
+                return window.wrapSideBySide(html, pieChart, msgId, pieCsv, clean);
             }
 
             // 2. Check for Key-Value Numerical Metrics
@@ -300,24 +496,32 @@ HTML_INTERFACE = """<!DOCTYPE html>
                 }
             }
 
+            var kvCsv = '';
+            if (kvMatches.length > 0) {
+                var kvCsvRows = ["Entity,Metric Value"];
+                for (var ki = 0; ki < kvMatches.length; ki++) { kvCsvRows.push('"' + kvMatches[ki].label + '","' + kvMatches[ki].raw + '"'); }
+                kvCsv = encodeURIComponent(kvCsvRows.join('\\n'));
+            }
+
             if (kvMatches.length === 2) {
                 var compGraph = window.renderComparisonGraph(kvMatches);
-                return window.wrapSideBySide(html, compGraph);
+                return window.wrapSideBySide(html, compGraph, msgId, kvCsv, clean);
             } else if (kvMatches.length >= 3) {
                 var barGraph = window.renderBarGraph(kvMatches, 'Ranked Comparison');
-                return window.wrapSideBySide(html, barGraph);
+                return window.wrapSideBySide(html, barGraph, msgId, kvCsv, clean);
             }
 
             // Fallback Leader Cards for single-item responses
             var viz = '';
             if (clean.indexOf('1,192,842,191') !== -1 || clean.indexOf('Media Gamma') !== -1) {
-                viz = '<div class="p-3.5 bg-sky-50 border border-sky-200 rounded-xl text-xs shadow-sm"><div class="font-bold text-sky-900 mb-1 flex items-center justify-between"><span>🏆 Top Property Audience</span><span class="font-mono text-sky-700">1.19B</span></div><div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden mt-1.5"><div class="bg-sky-600 h-full rounded-full" style="width:100%"></div></div><div class="flex justify-between text-[10px] text-slate-600 mt-1 font-semibold"><span>Media Gamma (#1 Ranked)</span><span>1,192,842,191</span></div></div>';
-                return window.wrapSideBySide(html, viz);
+                viz = '<div class="p-3.5 bg-sky-50 border border-sky-200/80 rounded-2xl text-xs shadow-xs"><div class="font-bold text-sky-900 mb-1 flex items-center justify-between"><span>🏆 Top Property Audience</span><span class="font-mono text-sky-700">1.19B</span></div><div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden mt-1.5"><div class="bg-sky-600 h-full rounded-full" style="width:100%"></div></div><div class="flex justify-between text-[10px] text-slate-600 mt-1 font-semibold"><span>Media Gamma (#1 Ranked)</span><span class="font-mono font-bold">1,192,842,191</span></div></div>';
+                return window.wrapSideBySide(html, viz, msgId, kvCsv, clean);
             } else if (clean.indexOf('camp_842') !== -1 || clean.indexOf('9.48') !== -1 || clean.indexOf('spend') !== -1) {
-                viz = '<div class="p-3.5 bg-purple-50 border border-purple-200 rounded-xl text-xs shadow-sm"><div class="font-bold text-purple-900 mb-1 flex items-center justify-between"><span>⏱️ Top Campaign Spend</span><span class="font-mono text-purple-700">$9.48 USD</span></div><div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden mt-1.5"><div class="bg-purple-600 h-full rounded-full" style="width:85%"></div></div><div class="flex justify-between text-[10px] text-slate-600 mt-1 font-semibold"><span>Campaign camp_842</span><span>Highest Spend</span></div></div>';
-                return window.wrapSideBySide(html, viz);
+                viz = '<div class="p-3.5 bg-purple-50 border border-purple-200/80 rounded-2xl text-xs shadow-xs"><div class="font-bold text-purple-900 mb-1 flex items-center justify-between"><span>⏱️ Top Campaign Spend</span><span class="font-mono text-purple-700">$9.48 USD</span></div><div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden mt-1.5"><div class="bg-purple-600 h-full rounded-full" style="width:85%"></div></div><div class="flex justify-between text-[10px] text-slate-600 mt-1 font-semibold"><span>Campaign camp_842</span><span class="font-mono font-bold">Highest Spend</span></div></div>';
+                return window.wrapSideBySide(html, viz, msgId, kvCsv, clean);
             }
-            return html;
+
+            return window.wrapSideBySide(html, '', msgId, '', clean);
         };
 
         // Core submit logic — receives question text directly
@@ -433,6 +637,29 @@ HTML_INTERFACE = """<!DOCTYPE html>
             </button>
         </div>
     </header>
+
+    <!-- Real-Time Telecast Telemetry Ticker -->
+    <div class="bg-slate-900 border-b border-slate-800 text-slate-300 px-6 py-2 text-[11px] font-mono flex items-center justify-between overflow-hidden shadow-inner">
+        <div class="flex items-center gap-2 shrink-0">
+            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> LIVE TELEMETRY
+            </span>
+        </div>
+        <div class="flex-1 overflow-x-auto whitespace-nowrap scrollbar-none px-4 flex items-center gap-6 text-[11px]">
+            <span class="flex items-center gap-1.5"><span class="text-slate-400">Media Gamma:</span> <span class="font-bold text-white">1.19B Viewers</span> <span class="text-emerald-400 font-bold">▲ +3.8%</span></span>
+            <span class="text-slate-700">|</span>
+            <span class="flex items-center gap-1.5"><span class="text-slate-400">Connected TV Share:</span> <span class="font-bold text-sky-400">24.42%</span></span>
+            <span class="text-slate-700">|</span>
+            <span class="flex items-center gap-1.5"><span class="text-slate-400">Top Content Watch:</span> <span class="font-bold text-white">30,076s</span></span>
+            <span class="text-slate-700">|</span>
+            <span class="flex items-center gap-1.5"><span class="text-slate-400">Top Ad Category:</span> <span class="font-bold text-amber-400">Adidas (190)</span></span>
+            <span class="text-slate-700">|</span>
+            <span class="flex items-center gap-1.5"><span class="text-slate-400">Lakehouse Sync:</span> <span class="font-bold text-emerald-400">Live Databricks</span></span>
+        </div>
+        <div class="shrink-0 hidden sm:flex items-center gap-2 text-[10px] text-slate-400">
+            <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span> 210 US DMAs Active
+        </div>
+    </div>
 
     <!-- Hero Section -->
     <section id="about" class="px-6 py-20 max-w-6xl mx-auto text-center flex flex-col items-center">
